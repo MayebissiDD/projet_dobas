@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('dossiers', function (Blueprint $table) {
-        $table->id();
-        $table->string('nom');
-        $table->string('email');
-        $table->string('bourse');
-        $table->enum('statut', ['en attente', 'accepté', 'rejeté']);
-        $table->timestamps();
+        Schema::create('applications', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
         });
     }
 
@@ -26,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('dossiers');
+        Schema::dropIfExists('applications');
     }
 };

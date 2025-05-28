@@ -30,24 +30,22 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
         $user = Auth::user();
 
-        if (!in_array($user->role, ['admin', 'agent', 'student'])) {
+        if ($user->hasRole('admin')) {
+            return redirect('/admin/dashboard');
+        } elseif ($user->hasRole('agent')) {
+            return redirect('/agent/dossiers');
+        } elseif ($user->hasRole('etudiant')) {
+            return redirect('/etudiant/dashboard');
+        } else {
             Auth::logout();
             return redirect('/login')->withErrors(['email' => 'Rôle utilisateur invalide.']);
         }
-
-
-        return redirect(match ($user->role) {
-            'admin' => '/admin/dashboard',
-            'agent' => '/agent/dossiers',
-            'student' => '/student/dashboard',
-            default => '/',
-        });
     }
+
 
     /**
      * Destroy an authenticated session.

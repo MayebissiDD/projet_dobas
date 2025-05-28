@@ -5,7 +5,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectTrigger, SelectItem, SelectContent, SelectValue } from '@/components/ui/select'
+import { Select, 
+  Trigger, SelectItem, SelectContent, SelectValue } from '@/components/ui/select'
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
 } from '@/components/ui/pagination'

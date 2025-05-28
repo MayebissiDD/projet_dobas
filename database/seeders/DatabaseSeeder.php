@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use Database\Seeders\DossierSeeder;
+use Database\Seeders\RolepermissionSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,10 +24,7 @@ class DatabaseSeeder extends Seeder
         // Appel du seeder des utilisateurs
         $this->call([
             UserSeeder::class,
-        ]);
-        // Appel du seeder des dossiers
-        $this->call([
-            DossierSeeder::class,
+            RolepermissionSeeder::class,
         ]);
     }
 }
