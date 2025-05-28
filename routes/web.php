@@ -1,27 +1,30 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// Contrôleurs
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\ContactController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Agent\DossierController;
-use App\Http\Controllers\Agent\AgentDossierController;
-use App\Http\Controllers\Student\StudentDossierController;
-use App\Http\Controllers\Student\StudentController;
-use App\Http\Controllers\Student\StudentBourseController;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// --------------------
+// ROUTES PUBLIQUES
+// --------------------
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/', fn () => Inertia::render('Public/Home'))->name('home');
+Route::get('/apropos', fn () => Inertia::render('Public/Apropos'))->name('apropos');
+Route::get('/bourses', fn () => Inertia::render('Public/Bourses'))->name('bourses');
+Route::get('/postuler', fn () => Inertia::render('Public/Postuler'))->name('postuler');
+Route::get('/contact', fn () => Inertia::render('Public/Contact'))->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+
+// --------------------
+// AUTHENTIFICATION & PROFIL
+// --------------------
+
+require __DIR__.'/auth.php';
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,27 +32,38 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+// --------------------
+// ÉTUDIANT
+// --------------------
 
-
-Route::get('/', fn () => Inertia::render('Public/Home'));
-Route::get('/bourses', fn () => Inertia::render('Public/BourseList'));
-Route::get('/postuler', fn () => Inertia::render('Public/PostulerForm'));
-
-
-Route::middleware(['auth', 'role:etudiant'])->group(function () {
-    Route::get('/etudiant/dashboard', function () {
-        return Inertia::render('Student/Dashboard');
-    });
+Route::middleware(['auth', 'role:etudiant'])->prefix('etudiant')->group(function () {
+    Route::get('/dashboard', fn () => Inertia::render('Student/Dashboard'))->name('etudiant.dashboard');
+    Route::get('/statut', fn () => Inertia::render('Student/ApplicationStatus'))->name('etudiant.status');
+    Route::get('/dossiers', [DossierController::class, 'index'])->name('etudiant.dossiers.index');
+    Route::get('/dossiers/{id}', [DossierController::class, 'show'])->name('etudiant.dossiers.show');
 });
+
+// --------------------
+// AGENT
+// --------------------
 
 Route::middleware(['auth', 'role:agent'])->prefix('agent')->group(function () {
-    Route::get('/dossiers', [DossierController::class, 'index']);
-    Route::get('/dossiers/{id}', [DossierController::class, 'show']);
+    Route::get('/dossiers', fn () => Inertia::render('Agent/DossierList'))->name('agent.dossiers.index');
+    Route::get('/dossiers/{id}', fn ($id) => Inertia::render('Agent/DossierDetails', ['id' => $id]))->name('agent.dossiers.show');
+    Route::get('/dossiers/{id}/edit', fn ($id) => Inertia::render('Agent/EditDossier', ['id' => $id]))->name('agent.dossiers.edit');
 });
 
+// --------------------
+// ADMIN
+// --------------------
 
-Route::middleware(['auth', 'role:agent'])->group(function () {
-    Route::get('/agent/dossiers', [DossierController::class, 'index'])->name('agent.dossiers.index');
-    Route::get('/agent/dossiers/{id}', [DossierController::class, 'show'])->name('agent.dossiers.show');
+Route::redirect('/admin/users/utilisateurs', '/admin/utilisateurs'); // Alias supplémentaire
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/utilisateurs', fn () => Inertia::render('Admin/Users/Index'))->name('admin.utilisateurs.index');
+    Route::post('/utilisateurs/{user}/role', [UserController::class, 'assignRole'])->name('utilisateurs.assignRole');
+    Route::get('/dashboard', fn () => Inertia::render('Admin/Dashboard'))->name('admin.dashboard');
+    Route::get('/dossiers', [DossierController::class, 'adminIndex'])->name('admin.dossiers.index');
+    Route::get('/dossiers/{id}', [DossierController::class, 'adminShow'])->name('admin.dossiers.show');
+    Route::get('/dossiers/{id}/edit', [DossierController::class, 'adminEdit'])->name('admin.dossiers.edit');
 });

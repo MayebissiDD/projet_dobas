@@ -2,36 +2,48 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-        ]);
+        // Vérifie que les rôles existent
+        foreach (['admin', 'agent', 'etudiant'] as $role) {
+            Role::firstOrCreate(['name' => $role]);
+        }
 
-        User::create([
-            'name' => 'Agent User',
-            'email' => 'agent@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'agent',
-        ]);
+        // Admin
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@dobas.cg'],
+            [
+                'name' => 'Admin Test',
+                'password' => Hash::make('password'),
+            ]
+        );
+        $admin->syncRoles(['admin']);
 
-        User::create([
-            'name' => 'Etudiant User',
-            'email' => 'etudiant@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'etudiant',
-        ]);
+        // Agent
+        $agent = User::firstOrCreate(
+            ['email' => 'agent@dobas.cg'],
+            [
+                'name' => 'Agent Test',
+                'password' => Hash::make('password'),
+            ]
+        );
+        $agent->syncRoles(['agent']);
+
+        // Étudiant
+        $etudiant = User::firstOrCreate(
+            ['email' => 'etudiant@dobas.cg'],
+            [
+                'name' => 'Etudiant Test',
+                'password' => Hash::make('password'),
+            ]
+        );
+        $etudiant->syncRoles(['etudiant']);
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,30 +29,30 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:etudiant,agent'],
-        ]);
+   public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        'role' => ['required', 'in:etudiant,agent'],
+    ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+    ]);
 
-        event(new Registered($user));
+    $user->assignRole($request->role); // Spatie ici
 
-        Auth::login($user);
+    event(new Registered($user));
 
-        return redirect()->intended(match ($user->role) {
-            'agent' => '/agent/dossiers',
-            'etudiant' => '/etudiant/dashboard',
-            default => '/',
-        });
-    }
+    Auth::login($user);
+
+    return redirect()->intended(match ($request->role) {
+        'agent' => '/agent/dossiers',
+        'etudiant' => '/etudiant/dashboard',
+    });
+}
 }
