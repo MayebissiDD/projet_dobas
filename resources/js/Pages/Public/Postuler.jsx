@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, FileText, CreditCard, Eye } from "lucide-react";
 import { Link } from "@inertiajs/react";
 
+import imgBourse from "@/assets/images/imgBourse6.jpg"
+
 export default function Postuler() {
   const steps = [
     {
@@ -31,7 +33,7 @@ export default function Postuler() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
       {/* Hero section */}
-      <section className="relative h-[70vh] flex items-center justify-center bg-fixed bg-center bg-cover" style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1603570418360-621b88f1d8c6")' }}>
+      <section className="relative h-[70vh] flex items-center justify-center bg-fixed bg-center bg-cover" style={{ backgroundImage: `url(${imgBourse})`}}>
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center px-4 space-y-6">
           <motion.h1
@@ -78,10 +80,10 @@ export default function Postuler() {
           <p className="text-lg">Créez un compte ou connectez-vous pour commencer dès maintenant votre candidature.</p>
           <div className="flex justify-center gap-4 flex-wrap">
             <Link href="/register">
-              <Button className="bg-green-700 hover:bg-green-800 text-white">Créer un compte</Button>
+              <Button className="bg-green-700 hover:bg-green-800 hover:scale-105 transition-transform duration-200 text-white">Créer un compte</Button>
             </Link>
             <Link href="/login">
-              <Button variant="outline">Se connecter</Button>
+              <Button variant="outline" className="hover:scale-105 transition-transform duration-200">Se connecter</Button>
             </Link>
           </div>
         </motion.section>
