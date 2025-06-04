@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 
 import hero5 from "@/assets/images/hero6.jpg"
+import logo1 from "@/assets/images/logoPartenaire/escat.png"
+import logo2 from "@/assets/images/logoPartenaire/esgae.png"
+import logo3 from "@/assets/images/logoPartenaire/ihem-isti.jpg"
+import logo4 from "@/assets/images/logoPartenaire/ead.png"
+import logo5 from "@/assets/images/logoPartenaire/eces.png"
+import logo6 from "@/assets/images/logoPartenaire/2i.jpg"
+import logo7 from "@/assets/images/logoPartenaire/escat.png"
+import logo8 from "@/assets/images/logoPartenaire/escat.png"
 
 export default function Apropos() {
   return (
@@ -105,14 +113,16 @@ export default function Apropos() {
       >
         <h2 className="text-3xl font-bold mb-6 text-center text-green-700 dark:text-yellow-400">Nos Écoles Partenaires</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+          {[logo1, logo2, logo3, logo4,
+            logo5, logo6, logo7, logo8
+          ].map((img, i) => (
             <div key={i} className="bg-white dark:bg-zinc-800 border rounded-xl shadow-md p-4 text-center hover:scale-105 transition-transform">
               <img
-                src={`https://via.placeholder.com/100x60?text=École+${i}`}
-                alt={`École partenaire ${i}`}
+                src={`${img}`}
+                alt={`École partenaire ${i + 1}`}
                 className="mx-auto mb-2"
               />
-              <p className="text-sm font-medium">École {i}</p>
+              {/* <p className="text-sm font-medium">École {i}</p> */}
             </div>
           ))}
         </div>

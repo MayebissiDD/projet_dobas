@@ -8,7 +8,7 @@ import { motion } from "framer-motion"
 import { useEffect } from "react"
 import PublicLayout from "@/Layouts/PublicLayout"
 
-import hero1 from "@/assets/images/hero1.jpg"
+import hero6 from "@/assets/images/hero6.jpg"
 import hero2 from "@/assets/images/hero2.jpg"
 import hero5 from "@/assets/images/hero5.jpg"
 import { Carousel } from 'react-responsive-carousel'
@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
       {/* Hero Section */}
-      <section className="relative h-[80vh]">
+      <section className="relative h-[90vh]">
         <Carousel
           autoPlay
           infiniteLoop
@@ -32,12 +32,12 @@ export default function Home() {
           transitionTime={1000}
           className="h-full"
         >
-          {[hero1, hero2, hero5].map((img, idx) => (
-            <div key={idx} className="relative h-[80vh]">
+          {[hero6, hero2, hero5].map((img, idx) => (
+            <div key={idx} className="relative h-[90vh]">
               <img
                 src={`${img}`}
                 alt={`Image ${idx + 1}`}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-top"
               />
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center space-y-6 z-10">
                 <motion.h1

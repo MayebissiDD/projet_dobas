@@ -33,7 +33,7 @@ export default function Postuler() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
       {/* Hero section */}
-      <section className="relative h-[70vh] flex items-center justify-center bg-fixed bg-center bg-cover" style={{ backgroundImage: `url(${imgBourse})`}}>
+      <section className="relative h-[100vh] flex items-center justify-center bg-fixed bg-cover bg-top" style={{ backgroundImage: `url(${imgBourse})`}}>
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center px-4 space-y-6">
           <motion.h1
