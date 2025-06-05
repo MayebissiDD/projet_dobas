@@ -12,7 +12,7 @@ export default function Footer() {
         <div>
           <h2 className="text-xl font-bold mb-2">DOBAS</h2>
           <p className="text-gray-200">
-            Direction de l’Orientation, des Bourses et Aides Scolaires. Au service des étudiants congolais.
+            Direction de l’Orientation, des Bourses et Aides Scolaires.
           </p>
         </div>
 

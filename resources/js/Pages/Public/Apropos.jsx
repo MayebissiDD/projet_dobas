@@ -4,10 +4,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 
+import hero5 from "@/assets/images/hero6.jpg"
+import logo1 from "@/assets/images/logoPartenaire/escat.png"
+import logo2 from "@/assets/images/logoPartenaire/esgae.png"
+import logo3 from "@/assets/images/logoPartenaire/ihem-isti.jpg"
+import logo4 from "@/assets/images/logoPartenaire/ead.png"
+import logo5 from "@/assets/images/logoPartenaire/eces.png"
+import logo6 from "@/assets/images/logoPartenaire/2i.jpg"
+import logo7 from "@/assets/images/logoPartenaire/escat.png"
+import logo8 from "@/assets/images/logoPartenaire/escat.png"
+
 export default function Apropos() {
   return (
     <div className="min-h-screen py-16 px-4 md:px-20 text-zinc-800 dark:text-white bg-white dark:bg-zinc-900 space-y-24">
-      {/* Mot du directeur avec placeholder */}
+      
+      {/* Mot du Directeur */}
       <motion.section
         className="max-w-6xl mx-auto flex flex-col md:flex-row gap-10 items-start"
         initial={{ opacity: 0, y: 30 }}
@@ -15,12 +26,12 @@ export default function Apropos() {
         transition={{ duration: 0.8 }}
       >
         <img
-          src="/images/directeur-placeholder.jpg"
+          src={hero5}
           alt="Portrait du Directeur Général de la DOBAS"
-          className="rounded-xl w-60 h-auto shadow-lg border-4 border-green-700 object-cover"
+          className="rounded-2xl w-60 h-auto shadow-xl border-4 border-green-700 object-cover"
         />
         <div className="flex-1 space-y-4">
-          <h2 className="text-3xl font-bold mb-2">Mot du Directeur Général</h2>
+          <h2 className="text-4xl font-extrabold mb-3 text-green-700 dark:text-yellow-400">Mot du Directeur Général</h2>
           <p className="leading-relaxed text-justify text-lg">
             Chers étudiants et partenaires,<br /><br />
             La Direction de l'Orientation, des Bourses et Aides Scolaires (DOBAS) œuvre chaque jour pour offrir aux jeunes congolais des opportunités concrètes de formation et d'accompagnement. Grâce à une stratégie inclusive et moderne, nous centralisons les bourses disponibles, soutenons les démarches administratives et accompagnons les candidats dans leur parcours post-baccalauréat.
@@ -32,27 +43,27 @@ export default function Apropos() {
         </div>
       </motion.section>
 
-      {/* CTA visuel */}
+      {/* CTA Section */}
       <motion.section
-        className="bg-green-700 text-white rounded-xl p-8 md:p-12 shadow-lg max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-10"
+        className="bg-gradient-to-r from-green-700 to-green-800 text-white rounded-2xl p-8 md:p-12 shadow-xl max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-10"
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
       >
         <div className="flex-1 space-y-4 text-center md:text-left">
-          <h2 className="text-4xl font-bold">Investir dans l’éducation, c’est investir dans la nation</h2>
-          <p className="text-lg">
+          <h2 className="text-4xl font-bold leading-snug">Investir dans l’éducation,<br className="hidden md:block" /> c’est investir dans la nation</h2>
+          <p className="text-lg opacity-90">
             Découvrez nos bourses et laissez-nous vous accompagner vers l’excellence académique.
           </p>
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black">
+          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-base px-6 py-3 rounded-xl">
             Voir les bourses <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
         <img
           src="https://via.placeholder.com/300x200?text=Éducation"
           alt="Illustration bourse"
-          className="rounded-xl shadow-md"
+          className="rounded-xl shadow-lg border"
         />
       </motion.section>
 
@@ -64,7 +75,7 @@ export default function Apropos() {
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
       >
-        <h2 className="text-3xl font-bold mb-10 text-center">Nos Missions</h2>
+        <h2 className="text-3xl font-bold mb-10 text-center text-green-700 dark:text-yellow-400">Nos Missions</h2>
         <div className="grid md:grid-cols-2 gap-6">
           {[
             {
@@ -84,9 +95,9 @@ export default function Apropos() {
               desc: "Collaborer avec des établissements reconnus pour offrir des parcours solides et adaptés."
             }
           ].map((item, idx) => (
-            <div key={idx} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow hover:shadow-md transition">
-              <h3 className="text-xl font-semibold mb-2 text-green-700 dark:text-yellow-400">{item.title}</h3>
-              <p className="text-base leading-relaxed">{item.desc}</p>
+            <div key={idx} className="bg-zinc-100 dark:bg-zinc-800 p-6 rounded-xl shadow-sm hover:shadow-md transition-all">
+              <h3 className="text-xl font-bold mb-2 text-green-700 dark:text-yellow-400">{item.title}</h3>
+              <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-200">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -100,16 +111,18 @@ export default function Apropos() {
         transition={{ duration: 0.7 }}
         viewport={{ once: true }}
       >
-        <h2 className="text-3xl font-bold mb-6 text-center">Nos Écoles Partenaires</h2>
+        <h2 className="text-3xl font-bold mb-6 text-center text-green-700 dark:text-yellow-400">Nos Écoles Partenaires</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="bg-white dark:bg-zinc-800 border rounded-lg shadow-md p-4 text-center hover:scale-105 transition-transform">
+          {[logo1, logo2, logo3, logo4,
+            logo5, logo6, logo7, logo8
+          ].map((img, i) => (
+            <div key={i} className="bg-white dark:bg-zinc-800 border rounded-xl shadow-md p-4 text-center hover:scale-105 transition-transform">
               <img
-                src={`https://via.placeholder.com/100x60?text=École+${i}`}
-                alt={`École partenaire ${i}`}
+                src={`${img}`}
+                alt={`École partenaire ${i + 1}`}
                 className="mx-auto mb-2"
               />
-              <p className="text-sm font-medium">École {i}</p>
+              {/* <p className="text-sm font-medium">École {i}</p> */}
             </div>
           ))}
         </div>
@@ -123,7 +136,7 @@ export default function Apropos() {
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
       >
-        <h2 className="text-3xl font-bold mb-8 text-center">Foire Aux Questions</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center text-green-700 dark:text-yellow-400">Foire Aux Questions</h2>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="item-1">
             <AccordionTrigger>Qui peut postuler à une bourse via la DOBAS ?</AccordionTrigger>

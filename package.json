@@ -36,7 +36,9 @@
         "lucide-react": "^0.511.0",
         "react-hook-form": "^7.56.4",
         "recharts": "^2.15.3",
+        "react-responsive-carousel": "^3.2.23",
         "sonner": "^2.0.3",
+        "swiper": "^11.2.8",
         "tailwind-merge": "^3.3.0",
         "tailwindcss-animate": "^1.0.7"
     }
