@@ -1,13 +1,13 @@
 import Header from "@/Components/Public/Header"
 import Footer from "@/Components/Public/Footer"
-import { Toaster } from "sonner";
+import { Toaster } from "sonner"
 
 export default function PublicLayout({ children }) {
   return (
-    <div className="min-full-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Header />
       <Toaster />
-      <main className="flex-1">
+      <main className="flex-1 bg-white dark:bg-zinc-900">
         {children}
       </main>
       <Footer />
