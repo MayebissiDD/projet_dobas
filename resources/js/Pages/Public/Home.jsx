@@ -8,9 +8,9 @@ import { motion } from "framer-motion"
 import { useEffect } from "react"
 import PublicLayout from "@/Layouts/PublicLayout"
 
-import hero6 from "@/assets/images/hero6.jpg"
-import hero2 from "@/assets/images/hero2.jpg"
-import hero5 from "@/assets/images/hero5.jpg"
+import hero1 from "@/assets/images/image-2.jpg"
+import hero2 from "@/assets/images/mt-6.jpeg.jpg"
+import hero3 from "@/assets/images/presn.webp"
 import { Carousel } from 'react-responsive-carousel'
 import 'react-responsive-carousel/lib/styles/carousel.min.css'
 
@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
       {/* Hero Section */}
-      <section className="relative h-[90vh]">
+      <section className="relative h-[70vh]">
         <Carousel
           autoPlay
           infiniteLoop
@@ -32,8 +32,8 @@ export default function Home() {
           transitionTime={1000}
           className="h-full"
         >
-          {[hero6, hero2, hero5].map((img, idx) => (
-            <div key={idx} className="relative h-[90vh]">
+          {[hero1, hero2, hero3].map((img, idx) => (
+            <div key={idx} className="relative h-[70vh]">
               <img
                 src={`${img}`}
                 alt={`Image ${idx + 1}`}
@@ -67,9 +67,9 @@ export default function Home() {
             La direction de l'orientation, des bourses et aides scolaires (DOBAS) a pour rôle de centraliser les offres de bourses, préparer les arrêtés d'attribution, et accompagner les élèves et étudiants.
           </p>
           <div className="grid md:grid-cols-2 gap-8 text-left">
-            <Card className="shadow-lg hover:shadow-xl transition duration-300">
+            <Card className="shadow-lg bg-yellow-100 hover:shadow-xl hover:bg-yellow-200 transition duration-300">
               <CardContent className="p-6 flex items-start space-x-4">
-                <div className="bg-green-100 text-green-600 p-3 rounded-full">
+                <div className="bg-red-100 text-green-600 p-3 rounded-full">
                   📚
                 </div>
                 <div>
@@ -78,9 +78,9 @@ export default function Home() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-lg hover:shadow-xl transition duration-300">
+            <Card className="shadow-lg bg-red-100 hover:shadow-xl hover:bg-red-300 transition duration-300">
               <CardContent className="p-6 flex items-start space-x-4">
-                <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
+                <div className="bg-yellow-100 text-blue-600 p-3 rounded-full">
                   🎓
                 </div>
                 <div>
@@ -104,7 +104,7 @@ export default function Home() {
               { name: "Kristina", quote: "Grâce à la DOBAS, j’ai pu poursuivre mes études à l’étranger avec un accompagnement personnalisé." },
               { name: "Willia", quote: "Un service transparent et humain. J’ai reçu mon aide dans les délais." }
             ].map((t, idx) => (
-              <Card key={idx} className="bg-zinc-50 dark:bg-zinc-800 shadow-md hover:shadow-xl transition">
+              <Card key={idx} className="bg-zinc-50 dark:bg-zinc-800 shadow-md hover:shadow-xl hover:bg-red-300 transition">
                 <CardContent className="p-6 space-y-4 text-left">
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">{t.name[0]}</div>
@@ -153,16 +153,15 @@ export default function Home() {
           </div>
 
           {/* Carte Google Maps */}
-          <div className="w-full h-full">
+          <div className="mt-16 w-full h-full">
             <div className="rounded-lg overflow-hidden shadow-md border dark:border-zinc-700">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3977.0170472679645!2d15.248475074135747!3d-4.279266046247044!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a6a3393657e1cb1%3A0xdf6b60366a6ab876!2sCongo%20Brazzaville!5e0!3m2!1sfr!2scg!4v1680543005583!5m2!1sfr!2scg"
+                src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3978.710007495038!2d15.25319893928219!3d-4.276474976729148!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zNMKwMTYnMzUuMyJTIDE1wrAxNScxNi44IkU!5e0!3m2!1sfr!2scg!4v1749130325970!5m2!1sfr!2scg" 
+                className="h-[300px] md:h-[450px]"
                 width="100%"
-                height="450"
                 allowFullScreen=""
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-full"
               ></iframe>
             </div>
           </div>

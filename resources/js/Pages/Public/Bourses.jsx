@@ -106,9 +106,11 @@ export default function BoursePage() {
               Pourquoi Postuler à une Bourse ?
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
-              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md transition">
+              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md hover:bg-red-300 transition">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <GraduationCap className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  <div className="bg-yellow-100 text-green-600 p-3 rounded-full">
+                   <GraduationCap className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
                       Accès facilité aux études supérieures
@@ -120,9 +122,11 @@ export default function BoursePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md transition">
+              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md hover:bg-red-300 transition">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <PiggyBank className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  <div className="bg-yellow-200 text-green-600 p-3 rounded-full">
+                   <PiggyBank className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
                       Allègement des coûts
@@ -134,9 +138,11 @@ export default function BoursePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md transition">
+              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md hover:bg-red-300 transition">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <Globe2 className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  <div className="bg-yellow-200 text-green-600 p-3 rounded-full">
+                   <Globe2 className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
                       Ouverture à l’international
@@ -148,9 +154,11 @@ export default function BoursePage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md transition">
+              <Card className="bg-white dark:bg-zinc-800 border shadow hover:shadow-md hover:bg-red-300 transition">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <BarChart className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  <div className="bg-yellow-100 text-green-600 p-3 rounded-full">
+                    <BarChart className="w-8 h-8 text-green-700 dark:text-yellow-400" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
                       Meilleures opportunités professionnelles
@@ -167,7 +175,7 @@ export default function BoursePage() {
 
         {/* Appel à action final */}
         <section className="text-center mt-8">
-          <Button size="lg" className="text-lg px-6 py-3">
+          <Button size="lg" className="text-lg px-6 py-3 bg-green-700 hover:bg-green-800">
             Voir les bourses disponibles
           </Button>
         </section>

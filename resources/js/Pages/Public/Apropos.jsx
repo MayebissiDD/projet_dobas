@@ -4,7 +4,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 
-import hero5 from "@/assets/images/hero6.jpg"
+import dg from "@/assets/images/dg.jpg"
+import bourse from "@/assets/images/bs-1.jpg"
 import logo1 from "@/assets/images/logoPartenaire/escat.png"
 import logo2 from "@/assets/images/logoPartenaire/esgae.png"
 import logo3 from "@/assets/images/logoPartenaire/ihem-isti.jpg"
@@ -26,9 +27,9 @@ export default function Apropos() {
         transition={{ duration: 0.8 }}
       >
         <img
-          src={hero5}
+          src={dg}
           alt="Portrait du Directeur Général de la DOBAS"
-          className="rounded-2xl w-60 h-auto shadow-xl border-4 border-green-700 object-cover"
+          className="rounded-2xl w-60 h-auto shadow-xl border-4 border-yellow-400 object-cover"
         />
         <div className="flex-1 space-y-4">
           <h2 className="text-4xl font-extrabold mb-3 text-green-700 dark:text-yellow-400">Mot du Directeur Général</h2>
@@ -61,9 +62,9 @@ export default function Apropos() {
           </Button>
         </div>
         <img
-          src="https://via.placeholder.com/300x200?text=Éducation"
+          src={bourse}
           alt="Illustration bourse"
-          className="rounded-xl shadow-lg border"
+          className="rounded-2xl w-60 h-auto shadow-lg border"
         />
       </motion.section>
 
@@ -105,22 +106,22 @@ export default function Apropos() {
 
       {/* Écoles partenaires */}
       <motion.section
-        className="max-w-5xl mx-auto"
+        className="max-w-2xl mx-auto"
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.7 }}
         viewport={{ once: true }}
       >
         <h2 className="text-3xl font-bold mb-6 text-center text-green-700 dark:text-yellow-400">Nos Écoles Partenaires</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[logo1, logo2, logo3, logo4,
             logo5, logo6, logo7, logo8
           ].map((img, i) => (
-            <div key={i} className="bg-white dark:bg-zinc-800 border rounded-xl shadow-md p-4 text-center hover:scale-105 transition-transform">
+            <div key={i} className="bg-white dark:bg-zinc-800 border rounded-xl shadow-md p-2 text-center hover:scale-105 transition-transform w-full max-w-[160px] mx-auto">
               <img
                 src={`${img}`}
                 alt={`École partenaire ${i + 1}`}
-                className="mx-auto mb-2"
+                className="mx-auto mb-2 max-h-[80px] object-contain"
               />
               {/* <p className="text-sm font-medium">École {i}</p> */}
             </div>

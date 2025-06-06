@@ -2,6 +2,7 @@ import { Link } from "@inertiajs/react"
 import { Facebook, Instagram, Twitter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import congo from "@/assets/images/congo.png"
 
 export default function Footer() {
   return (
@@ -14,6 +15,11 @@ export default function Footer() {
           <p className="text-gray-200">
             Direction de l’Orientation, des Bourses et Aides Scolaires.
           </p>
+          <img
+            src={congo}
+            alt="Congo"
+            className="mt-2 rounded-2xl w-12 h-auto shadow-xl  object-cover"
+          />
         </div>
 
         {/* Bloc 2 : Liens */}

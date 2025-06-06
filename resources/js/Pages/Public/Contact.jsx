@@ -70,7 +70,7 @@ export default function Contact() {
             <div className="rounded-lg overflow-hidden shadow-md border">
               <iframe
                 title="Carte de localisation"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3977.0170472679645!2d15.248475074135747!3d-4.279266046247044!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a6a3393657e1cb1%3A0xdf6b60366a6ab876!2sCongo%20Brazzaville!5e0!3m2!1sfr!2scg!4v1680543005583!5m2!1sfr!2scg"
+                src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3978.710007495038!2d15.25319893928219!3d-4.276474976729148!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zNMKwMTYnMzUuMyJTIDE1wrAxNScxNi44IkU!5e0!3m2!1sfr!2scg!4v1749130325970!5m2!1sfr!2scg" 
                 width="100%"
                 height="300"
                 style={{ border: 0 }}
