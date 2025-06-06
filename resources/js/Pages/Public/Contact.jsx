@@ -70,8 +70,7 @@ export default function Contact() {
             <div className="rounded-lg overflow-hidden shadow-md border">
               <iframe
                 title="Carte de localisation"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4147.668987779745!2d15.251339450709024!3d-4.276438555097069!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a6a32f0b4e8c1b7%3A0xba5b45f1701d3902!2sCEFA%20M%C3%A9tiers%20du%20B%C3%A2timent%2C%20du%20froid%20et%20de%20la%20climatisation!5e0!3m2!1sfr!2scg!4v1749118299111!5m2!1sfr!2scg" 
-                 loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3977.0170472679645!2d15.248475074135747!3d-4.279266046247044!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a6a3393657e1cb1%3A0xdf6b60366a6ab876!2sCongo%20Brazzaville!5e0!3m2!1sfr!2scg!4v1680543005583!5m2!1sfr!2scg"
                 width="100%"
                 height="400"
                 style={{ border: 0 }}

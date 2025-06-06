@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, FileText, CreditCard, Eye } from "lucide-react";
 import { Link } from "@inertiajs/react";
 
-import imgBourse from "@/assets/images/imgBourse6.jpg"
+import imgBourse from "@/assets/images/mt-6.jpeg.jpg"
 
 export default function Postuler() {
   const steps = [
@@ -60,7 +60,7 @@ export default function Postuler() {
           viewport={{ once: true }}
         >
           {steps.map((step, i) => (
-            <div key={i} className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition flex flex-col items-center text-center">
+            <div key={i} className="bg-white dark:bg-zinc-800 p-6 rounded-xl shadow-lg hover:shadow-xl  hover:bg-red-300 transition flex flex-col items-center text-center">
               {step.icon}
               <h3 className="text-xl font-bold mt-4 mb-2">{step.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
