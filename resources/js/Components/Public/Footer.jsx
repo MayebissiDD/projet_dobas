@@ -1,28 +1,40 @@
-import { Link } from "@inertiajs/react"
-import { Facebook, Instagram, Twitter } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import congo from "@/assets/images/congo.png"
+import { Link } from "@inertiajs/react";
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import congo from "@/assets/images/congo.png";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#00853E] text-white pt-10 pb-6">
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
-        
-        {/* Bloc 1 : Présentation */}
-        <div>
-          <h2 className="text-xl font-bold mb-2">DOBAS</h2>
-          <p className="text-gray-200">
-            Direction de l’Orientation, des Bourses et Aides Scolaires.
-          </p>
+    <footer className="bg-[#00853E] text-white pt-10 pb-6 relative overflow-hidden">
+      <style>
+        {`
+          @keyframes zoomInOut {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+          }
+        `}
+      </style>
+
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10 text-sm">
+
+        {/* Bloc 1 : Présentation aligné à gauche */}
+        <div className="flex flex-col items-start">
           <img
             src={congo}
             alt="Congo"
-            className="mt-2 rounded-2xl w-12 h-auto shadow-xl  object-cover"
+            className="w-14 h-14 mb-3 rounded-full shadow-lg"
+            style={{
+              animation: "zoomInOut 4s ease-in-out infinite"
+            }}
           />
+          <h2 className="text-2xl font-bold mb-1 tracking-wide">DOBAS</h2>
+          <p className="text-gray-200 max-w-[220px]">
+            Direction de l’Orientation, des Bourses et Aides Scolaires.
+          </p>
         </div>
 
-        {/* Bloc 2 : Liens */}
+        {/* Bloc 2 : Liens de navigation */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Navigation</h3>
           <ul className="space-y-1">
@@ -45,19 +57,18 @@ export default function Footer() {
           </form>
         </div>
 
-        {/* Bloc 4 : Contact + Réseaux */}
+        {/* Bloc 4 : Contact & réseaux sociaux */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Contact</h3>
-          <p>Email : <a href="mailto:contact@dobas.cg" className="underline">contact@dobas.cg</a></p>
-          <p>Téléphone : +242 06 123 4567</p>
-          <p>Adresse : Brazzaville, République du Congo</p>
+          <p className="flex items-center gap-2"><Mail size={16} /> <a href="mailto:contact@dobas.cg" className="underline">contact@dobas.cg</a></p>
+          <p className="flex items-center gap-2"><Phone size={16} /> +242 06 123 4567</p>
+          <p className="flex items-center gap-2"><MapPin size={16} /> Brazzaville, Congo</p>
 
-          {/* Réseaux sociaux */}
           <div className="flex gap-4 mt-4">
-            {[ 
+            {[
               { href: "https://facebook.com", icon: <Facebook size={20} /> },
               { href: "https://instagram.com", icon: <Instagram size={20} /> },
-              { href: "https://twitter.com", icon: <Twitter size={20} /> }
+              { href: "https://twitter.com", icon: <Twitter size={20} /> },
             ].map(({ href, icon }, i) => (
               <a
                 key={i}
@@ -73,10 +84,9 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bas de page */}
-      <div className="text-center text-xs text-gray-100 mt-8 border-t border-white/20 pt-4">
+      <div className="text-center text-xs text-gray-100 mt-10 border-t border-white/20 pt-4">
         &copy; {new Date().getFullYear()} DOBAS. Tous droits réservés.
       </div>
     </footer>
-  )
+  );
 }
