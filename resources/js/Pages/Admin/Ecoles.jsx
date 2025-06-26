@@ -1,96 +1,71 @@
+import React from 'react';
+import { Inertia } from '@inertiajs/inertia';
+import { Link, usePage } from '@inertiajs/inertia-react';
 import AdminLayout from "@/Layouts/AdminLayout"
-import { useState } from "react"
-import { Plus, Eye, Edit, Trash2, Download } from "lucide-react"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import ModalAddEcole from "@/Components/Admin/ModalAddEcole";
 
-const sampleEcoles = [
-  { id: 1, nom: "Université de Paris", pays: "France", type: "Université", partenariats: 12 },
-  { id: 2, nom: "Institut Polytechnique de Dakar", pays: "Sénégal", type: "École d'ingénieur", partenariats: 8 },
-  { id: 3, nom: "Université Libre de Bruxelles", pays: "Belgique", type: "Université", partenariats: 5 }
-]
-
-export default function Ecoles() {
-  const [search, setSearch] = useState("")
-
-  const filtered = sampleEcoles.filter(ec =>
-    ec.nom.toLowerCase().includes(search.toLowerCase())
-  )
+export default function Ecoles({ schools }) {
+  const { flash } = usePage().props;
 
   return (
-    <div className="min-h-screen py-10 px-6 md:px-20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex justify-between items-center mb-8"
-      >
-        <div>
-          <h1 className="text-3xl font-bold">🏫 Écoles partenaires</h1>
-          <p className="text-muted-foreground">Liste des établissements liés à la DOBAS.</p>
-        </div>
-        <Button className="flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Ajouter une école
-        </Button>
-      </motion.div>
-
-      <ModalAddEcole
-        trigger={
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Ajouter une école
-          </Button>
-        }
-      />
-
-
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-        <Input
-          placeholder="Rechercher une école..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full md:w-1/3"
-        />
-        <Button variant="outline" className="flex gap-2">
-          <Download className="w-4 h-4" /> Exporter
-        </Button>
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Écoles partenaires</h1>
+        <Link href={route('admin.ecoles.create')} className="btn btn-primary">Ajouter une école</Link>
       </div>
-
-      <div className="overflow-x-auto bg-white dark:bg-zinc-800 rounded-xl shadow">
-        <table className="min-w-full text-sm">
-          <thead className="bg-zinc-100 dark:bg-zinc-700">
+      {flash.success && <div className="alert alert-success mb-4">{flash.success}</div>}
+      <div className="bg-white shadow rounded-lg overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-2 text-left">Nom</th>
-              <th className="px-4 py-2 text-center">Pays</th>
-              <th className="px-4 py-2 text-center">Type</th>
-              <th className="px-4 py-2 text-center">Partenariats</th>
-              <th className="px-4 py-2 text-center">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logo</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Promoteur</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacts</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Filières</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Capacité</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Autres</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {filtered.map((ecole) => (
-              <tr key={ecole.id} className="border-t dark:border-zinc-600">
-                <td className="px-4 py-2">{ecole.nom}</td>
-                <td className="text-center">{ecole.pays}</td>
-                <td className="text-center">{ecole.type}</td>
-                <td className="text-center font-semibold text-green-700 dark:text-green-400">{ecole.partenariats}</td>
-                <td className="flex items-center justify-center gap-2 py-2">
-                  <Button size="sm" variant="outline"><Eye className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="destructive"><Trash2 className="w-4 h-4" /></Button>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {schools.data.map((school) => (
+              <tr key={school.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {school.logo && <img src={school.logo} alt={school.nom} className="h-10 w-10 object-contain rounded" />}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap font-semibold">{school.nom}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{school.promoteur}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{school.contacts}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <ul className="list-disc pl-4">
+                    {(school.filieres || '').split(',').map((f, i) => f.trim() && <li key={i}>{f.trim()}</li>)}
+                  </ul>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">{school.capacite}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{school.adresse}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{school.autres}</td>
+                <td className="px-6 py-4 whitespace-nowrap flex gap-2">
+                  <Link href={route('admin.ecoles.edit', school.id)} className="btn btn-sm btn-secondary">Éditer</Link>
+                  <button onClick={() => handleDelete(school.id)} className="btn btn-sm btn-danger">Supprimer</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
-      <div className="flex justify-center mt-6">
-        <Button variant="outline" size="sm">Charger plus</Button>
+      {/* Pagination */}
+      <div className="mt-4 flex justify-end">
+        {/* Ajoutez ici la pagination si besoin */}
       </div>
     </div>
-  )
+  );
+
+  function handleDelete(id) {
+    if (confirm('Supprimer cette école ?')) {
+      Inertia.delete(route('admin.ecoles.destroy', id));
+    }
+  }
 }
 
 Ecoles.layout = page => <AdminLayout>{page}</AdminLayout>

@@ -12,9 +12,12 @@ import {
 } from '@/components/ui/pagination'
 import { router } from '@inertiajs/react'
 
-export default function DossierList({ dossiers, filters = {} }) {
+export default function DossierList({ dossiers, bourses = [], filters = {} }) {
   const handleFilterChange = (value) => {
-    router.get('/agent/dossiers', { statut: value }, { preserveScroll: true, preserveState: true,})
+    router.get('/agent/dossiers', { ...filters, statut: value }, { preserveScroll: true, preserveState: true, })
+  }
+  const handleBourseChange = (value) => {
+    router.get('/agent/dossiers', { ...filters, bourse_id: value }, { preserveScroll: true, preserveState: true, })
   }
 
   return (
@@ -23,17 +26,30 @@ export default function DossierList({ dossiers, filters = {} }) {
       <AgentLayout>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Liste des dossiers de candidature</h1>
-          <Select onValueChange={handleFilterChange} defaultValue={filters.statut || ''}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filtrer par statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Tous</SelectItem>
-              <SelectItem value="en attente">En attente</SelectItem>
-              <SelectItem value="accepté">Accepté</SelectItem>
-              <SelectItem value="rejeté">Rejeté</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-4">
+            <Select onValueChange={handleFilterChange} defaultValue={filters.statut || ''}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrer par statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tous</SelectItem>
+                <SelectItem value="en attente">En attente</SelectItem>
+                <SelectItem value="accepté">Accepté</SelectItem>
+                <SelectItem value="rejeté">Rejeté</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select onValueChange={handleBourseChange} defaultValue={filters.bourse_id || ''}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrer par bourse" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Toutes les bourses</SelectItem>
+                {bourses.map(b => (
+                  <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="rounded-xl border shadow-sm">
@@ -51,7 +67,7 @@ export default function DossierList({ dossiers, filters = {} }) {
                 dossiers.data.map((dossier) => (
                   <TableRow key={dossier.id}>
                     <TableCell>{dossier.nom}</TableCell>
-                    <TableCell>{dossier.bourse}</TableCell>
+                    <TableCell>{dossier.bourse ? dossier.bourse.nom : '-'}</TableCell>
                     <TableCell>
                       <Badge variant={
                         dossier.statut === 'accepté' ? 'success'

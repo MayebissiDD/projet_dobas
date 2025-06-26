@@ -5,6 +5,7 @@ import { Bell, CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import Echo from 'laravel-echo';
 
 const icons = {
   info: <Info className="text-blue-500" />,
@@ -34,6 +35,24 @@ export default function Notifications() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
+
+  useEffect(() => {
+    // Remplacer les fausses notifications par les vraies si besoin
+    window.Echo.channel('notifications')
+      .listen('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', (e) => {
+        setNotifications((prev) => [
+          {
+            id: e.id || Date.now(),
+            title: e.data?.message || 'Nouvelle notification',
+            body: e.data?.message || '',
+            type: 'info',
+            read: false,
+            date: new Date().toLocaleString('fr-FR'),
+          },
+          ...prev,
+        ]);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen py-10 px-6 md:px-20 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">

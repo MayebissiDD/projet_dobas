@@ -12,7 +12,15 @@ class Dossier extends Model
     protected $fillable = [
         'nom',
         'email',
-        'bourse',
         'statut',
+        'school_id',
+        'choix_ecoles',
+        'filiere_affectee',
+        'bourse_id',
     ];
+
+    public function bourse()
+    {
+        return $this->belongsTo(Bourse::class);
+    }
 }

@@ -7,35 +7,33 @@ import { Input } from '@/components/ui/input';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell
 } from 'recharts';
+import { router } from '@inertiajs/react';
 
-const rapportData = [
-  { id: 1, periode: 'Jan 2024', date: '2024-02-01', filename: 'rapport_janvier.pdf' },
-  { id: 2, periode: 'Fév 2024', date: '2024-03-01', filename: 'rapport_fevrier.pdf' },
-  { id: 3, periode: 'Mars 2024', date: '2024-04-01', filename: 'rapport_mars.pdf' },
-];
-
-const pieData = [
-  { name: 'Créations', value: 50, color: '#16a34a' },
-  { name: 'Rejets', value: 30, color: '#dc2626' },
-  { name: 'Suppressions', value: 20, color: '#eab308' },
-];
-
-const barData = [
-  { name: 'Jan', candidatures: 35 },
-  { name: 'Fév', candidatures: 42 },
-  { name: 'Mars', candidatures: 48 },
-  { name: 'Avr', candidatures: 53 },
-];
-
-export default function Rapports() {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+export default function Rapports({ logs = [], filters = {} }) {
+  const [from, setFrom] = useState(filters.from || '');
+  const [to, setTo] = useState(filters.to || '');
 
   const handleGenerate = () => {
     if (from && to) {
-      alert(`Rapport demandé du ${from} au ${to}`);
+      router.get(route('admin.rapports.logs'), { from, to });
     }
   };
+
+  // Statistiques pour les graphiques
+  const pieData = [
+    { name: 'Créations', value: logs.filter(l => l.action.includes('create')).length, color: '#16a34a' },
+    { name: 'Suppressions', value: logs.filter(l => l.action.includes('delete')).length, color: '#eab308' },
+    { name: 'Mises à jour', value: logs.filter(l => l.action.includes('update')).length, color: '#0ea5e9' },
+    { name: 'Consultations', value: logs.filter(l => l.action.includes('view')).length, color: '#6366f1' },
+  ];
+
+  const barData = logs.reduce((acc, log) => {
+    const month = new Date(log.created_at).toLocaleString('fr-FR', { month: 'short', year: 'numeric' });
+    const found = acc.find(b => b.name === month);
+    if (found) found.actions++;
+    else acc.push({ name: month, actions: 1 });
+    return acc;
+  }, []);
 
   return (
     <div className="min-h-screen py-10 px-6 md:px-20 bg-gradient-to-br from-white via-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 text-zinc-900 dark:text-white">
@@ -54,6 +52,15 @@ export default function Rapports() {
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full md:w-1/3" />
         <Button onClick={handleGenerate} disabled={!from || !to} className="w-full md:w-auto bg-green-700 hover:bg-green-800">
           Générer un rapport
+        </Button>
+      </div>
+
+      <div className="flex gap-4 mb-8">
+        <Button as="a" href={route('admin.rapports.logs.csv', { from, to })} target="_blank" variant="outline" className="border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white">
+          Exporter CSV
+        </Button>
+        <Button as="a" href={route('admin.rapports.logs.pdf', { from, to })} target="_blank" variant="outline" className="border-red-600 text-red-700 hover:bg-red-600 hover:text-white">
+          Exporter PDF
         </Button>
       </div>
 
@@ -77,7 +84,7 @@ export default function Rapports() {
 
         <div className="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-xl">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-600" /> Progression des candidatures
+            <BarChart3 className="w-5 h-5 text-blue-600" /> Actions par mois
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData} barSize={35}>
@@ -85,35 +92,35 @@ export default function Rapports() {
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ backgroundColor: '#f3f4f6', borderRadius: '0.5rem' }} />
               <Legend />
-              <Bar dataKey="candidatures" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="actions" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </motion.div>
 
       <div className="mt-16">
-        <h2 className="text-xl font-semibold mb-4">📂 Rapports générés</h2>
+        <h2 className="text-xl font-semibold mb-4">📂 Logs d'activité</h2>
         <div className="overflow-x-auto bg-white dark:bg-zinc-800 rounded-xl shadow">
           <table className="min-w-full text-sm">
             <thead className="bg-zinc-100 dark:bg-zinc-700">
               <tr>
                 <th className="px-4 py-2 text-left">#</th>
-                <th className="px-4 py-2">Période</th>
+                <th className="px-4 py-2">Utilisateur</th>
+                <th className="px-4 py-2">Action</th>
+                <th className="px-4 py-2">Objet</th>
+                <th className="px-4 py-2">Description</th>
                 <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Téléchargement</th>
               </tr>
             </thead>
             <tbody>
-              {rapportData.map((r) => (
-                <tr key={r.id} className="border-t dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
-                  <td className="px-4 py-2">#{r.id}</td>
-                  <td className="text-center">{r.periode}</td>
-                  <td className="text-center">{r.date}</td>
-                  <td className="text-center">
-                    <Button size="sm" variant="outline" className="flex items-center gap-1 text-green-700 border-green-600 hover:bg-green-600 hover:text-white">
-                      <FileDown className="w-4 h-4" /> PDF
-                    </Button>
-                  </td>
+              {logs.map((log, i) => (
+                <tr key={log.id} className="border-t dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition">
+                  <td className="px-4 py-2">#{log.id}</td>
+                  <td className="text-center">{log.user?.name || 'Système'}</td>
+                  <td className="text-center">{log.action}</td>
+                  <td className="text-center">{log.subject_type?.split('\\').pop() || '-'}</td>
+                  <td className="text-center">{log.description}</td>
+                  <td className="text-center">{new Date(log.created_at).toLocaleString('fr-FR')}</td>
                 </tr>
               ))}
             </tbody>

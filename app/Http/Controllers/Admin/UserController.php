@@ -42,6 +42,13 @@ class UserController extends Controller
 
         $user->assignRole($request->role);
 
+        \App\Services\ActivityLogger::log(
+            'create_user',
+            User::class,
+            $user->id,
+            "Création de l'utilisateur {$user->name} ({$user->email}) avec le rôle {$request->role}"
+        );
+
         return redirect()->back()->with('success', 'Utilisateur créé avec succès.');
     }
 
@@ -58,8 +65,14 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
         ]);
-
         $user->syncRoles([$request->role]);
+
+        \App\Services\ActivityLogger::log(
+            'update_user',
+            User::class,
+            $user->id,
+            "Mise à jour de l'utilisateur {$user->name} ({$user->email}) avec le rôle {$request->role}"
+        );
 
         return redirect()->back()->with('success', 'Utilisateur mis à jour.');
     }
@@ -67,7 +80,18 @@ class UserController extends Controller
     // Supprime un utilisateur
     public function destroy(User $user)
     {
+        $userName = $user->name;
+        $userEmail = $user->email;
+        $userId = $user->id;
         $user->delete();
+
+        \App\Services\ActivityLogger::log(
+            'delete_user',
+            User::class,
+            $userId,
+            "Suppression de l'utilisateur $userName ($userEmail)"
+        );
+
         return redirect()->back()->with('success', 'Utilisateur supprimé.');
     }
 
@@ -79,6 +103,13 @@ class UserController extends Controller
         ]);
 
         $user->syncRoles([$request->role]);
+
+        \App\Services\ActivityLogger::log(
+            'assign_role',
+            User::class,
+            $user->id,
+            "Changement de rôle de l'utilisateur {$user->name} ({$user->email}) en {$request->role}"
+        );
 
         return redirect()->back()->with('success', 'Rôle mis à jour.');
     }

@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('schools', function (Blueprint $table) {
             $table->id();
+            $table->string('nom');
+            $table->string('logo')->nullable();
+            $table->string('promoteur')->nullable();
+            $table->string('contacts')->nullable();
+            $table->text('filieres')->nullable(); // liste séparée par virgule ou JSON
+            $table->integer('capacite')->nullable();
+            $table->string('adresse')->nullable();
+            $table->text('autres')->nullable();
             $table->timestamps();
         });
     }
