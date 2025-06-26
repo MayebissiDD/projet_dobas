@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -35,4 +34,8 @@ return [
         ],
     ],
 
+    // Lygos payment service
+    'lygos' => [
+        'key' => env('LYGOS_API_KEY'),
+    ],
 ];

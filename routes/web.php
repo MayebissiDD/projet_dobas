@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\StatsController;
 use App\Http\Controllers\Admin\BourseController;
+use App\Http\Controllers\Public\PaymentController as PublicPaymentController;
 
 // --------------------
 // ROUTES PUBLIQUES
@@ -28,6 +29,7 @@ Route::get('/bourses', [\App\Http\Controllers\Admin\BourseController::class, 'pu
 Route::get('/postuler', fn() => Inertia::render('Public/Postuler'))->name('postuler');
 Route::get('/contact', fn() => Inertia::render('Public/Contact'))->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
+Route::post('/paiement/public', [PublicPaymentController::class, 'pay'])->name('public.paiement');
 
 // --------------------
 // AUTHENTIFICATION & PROFIL

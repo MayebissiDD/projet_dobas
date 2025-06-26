@@ -11,39 +11,41 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Vérifie que les rôles existent
-        foreach (['admin', 'agent', 'etudiant'] as $role) {
-            Role::firstOrCreate(['name' => $role]);
-        }
+        // Crée les rôles si pas déjà faits
+        Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'agent']);
+        Role::firstOrCreate(['name' => 'etudiant']);
 
         // Admin
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@dobas.cg'],
-            [
-                'name' => 'Admin Test',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $admin->syncRoles(['admin']);
+        $admin = User::create([
+            'name' => 'Super Admin',
+            'email' => 'admin@dobas.cg',
+            'password' => Hash::make('admin1234'),
+        ]);
+        $admin->assignRole('admin');
 
         // Agent
-        $agent = User::firstOrCreate(
-            ['email' => 'agent@dobas.cg'],
-            [
-                'name' => 'Agent Test',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $agent->syncRoles(['agent']);
+        $agent = User::create([
+            'name' => 'Agent DOBAS',
+            'email' => 'agent@dobas.cg',
+            'password' => Hash::make('agent1234'),
+        ]);
+        $agent->assignRole('agent');
 
-        // Étudiant
-        $etudiant = User::firstOrCreate(
-            ['email' => 'etudiant@dobas.cg'],
-            [
-                'name' => 'Etudiant Test',
-                'password' => Hash::make('password'),
-            ]
-        );
-        $etudiant->syncRoles(['etudiant']);
+        // Étudiants
+        for ($i = 1; $i <= 5; $i++) {
+            $student = User::create([
+                'name' => "Etudiant $i",
+                'email' => "etudiant$i@dobas.cg",
+                'password' => Hash::make('etudiant1234'),
+            ]);
+            $student->assignRole('etudiant');
+        }
+
+        // Affichage console pour la démo
+        echo "\n[DEMO] Connexions de test :\n";
+        echo "Admin    : admin@dobas.cg / admin1234\n";
+        echo "Agent    : agent@dobas.cg / agent1234\n";
+        echo "Etudiant : etudiant1@dobas.cg / etudiant1234\n";
     }
 }

@@ -26,6 +26,8 @@ export default function PostulerPage() {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [animateStats, setAnimateStats] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Animation des statistiques au chargement
   useEffect(() => {
@@ -71,14 +73,50 @@ export default function PostulerPage() {
 
   const onSubmit = async (paymentMethod) => {
     setIsSubmitting(true);
+    setSuccessMessage("");
+    setErrorMessage("");
     try {
-      // Simulation d'appel API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      alert(`Candidature envoyée avec succès via ${paymentMethod}!`);
-      setStep(1);
-      setFormData({});
+      if (paymentMethod === "Mobile Money") {
+        // Construction du formData pour l'API Lygos
+        const data = new FormData();
+        data.append('fullName', formData.fullName);
+        data.append('email', formData.email);
+        data.append('telephone', formData.telephone);
+        data.append('type_bourse', formData.type_bourse);
+        data.append('montant', 5000); // Montant fixe pour la démo
+        // Ajout des fichiers si besoin
+        if (formData.bac) data.append('bac', formData.bac);
+        if (formData.releve) data.append('releve', formData.releve);
+        if (formData.nationalite) data.append('nationalite', formData.nationalite);
+        if (formData.identite) data.append('identite', formData.identite);
+        if (formData.motivation) data.append('motivation', formData.motivation);
+        if (formData.filiere) data.append('filiere', formData.filiere);
+        if (formData.niveau) data.append('niveau', formData.niveau);
+
+        const response = await fetch('/paiement/public', {
+          method: 'POST',
+          body: data,
+        });
+        const result = await response.json();
+        if (result.link) {
+          window.location.href = result.link;
+          return;
+        } else if (result.success) {
+          setSuccessMessage('✅ Paiement validé via Lygos !');
+          setStep(1);
+          setFormData({});
+        } else {
+          setErrorMessage('❌ Le paiement a échoué. Veuillez réessayer.');
+        }
+      } else {
+        // Simulation pour Stripe ou autre méthode
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setSuccessMessage(`✅ Candidature envoyée avec succès via ${paymentMethod}!`);
+        setStep(1);
+        setFormData({});
+      }
     } catch (error) {
-      alert("Échec de l'envoi. Veuillez réessayer.");
+      setErrorMessage("❌ Échec de l'envoi. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
     }
@@ -389,7 +427,7 @@ export default function PostulerPage() {
                     
                     <div className="grid md:grid-cols-2 gap-6">
                       <Button 
-                        onClick={() => onSubmit("MTN Mobile Money")}
+                        onClick={() => onSubmit("Mobile Money")}
                         disabled={isSubmitting}
                         className="h-20 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
                       >

@@ -375,39 +375,7 @@ export default function Contact() {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <motion.section
-        className="bg-gradient-to-r from-green-600 via-yellow-500 to-red-500 py-16"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        viewport={{ once: true }}
-      >
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Besoin d'aide immédiate ?
-          </h2>
-          <p className="text-xl text-white/90 mb-8">
-            Consultez notre FAQ ou prenez rendez-vous avec un conseiller
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <motion.button
-              className="bg-white text-green-600 font-bold px-8 py-4 rounded-xl shadow-lg hover:bg-zinc-50 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Voir la FAQ
-            </motion.button>
-            <motion.button
-              className="bg-transparent border-2 border-white text-white font-bold px-8 py-4 rounded-xl hover:bg-white hover:text-green-600 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Prendre RDV
-            </motion.button>
-          </div>
-        </div>
-      </motion.section>
+    
     </div>
     </PublicLayout>
   )
