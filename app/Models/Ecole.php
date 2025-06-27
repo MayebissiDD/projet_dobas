@@ -5,25 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class School extends Model
+class Ecole extends Model
 {
     use HasFactory;
 
+    protected $table = 'ecoles';
+
     protected $fillable = [
         'nom',
-        'logo',
-        'promoteur',
-        'contacts',
-        'filieres',
+        'ville',
         'capacite',
-        'adresse',
-        'autres',
     ];
 
     public function dossiers()
     {
         return $this->hasMany(Dossier::class);
     }
-    // Suppression du modèle School, utiliser Ecole
-    // public function placesRestantes() { ... }
 }

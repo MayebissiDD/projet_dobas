@@ -23,4 +23,9 @@ class Dossier extends Model
     {
         return $this->belongsTo(Bourse::class);
     }
+
+    public function ecole()
+    {
+        return $this->belongsTo(Ecole::class, 'school_id');
+    }
 }

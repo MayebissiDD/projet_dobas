@@ -19,13 +19,14 @@ class Payment extends Model
         'paid_at',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // Ce modèle est obsolète, utiliser Paiement à la place
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
 
-    public function dossier()
-    {
-        return $this->belongsTo(Dossier::class);
-    }
+    // public function dossier()
+    // {
+    //     return $this->belongsTo(Dossier::class);
+    // }
 }
