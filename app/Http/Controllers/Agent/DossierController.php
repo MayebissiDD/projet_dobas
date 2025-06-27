@@ -213,5 +213,52 @@ class DossierController extends Controller
         );
         return back()->with('success', 'Dossier affecté à l\'école et notification envoyée.');
     }
+
+    // Soumission finale d'un dossier public après paiement validé
+    public function publicStore(Request $request)
+    {
+        // Validation stricte
+        $request->validate([
+            'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'date_naissance' => 'required|date',
+            'lieu_naissance' => 'required|string',
+            'adresse' => 'required|string',
+            'telephone' => 'required|string',
+            'email' => 'required|email',
+            'bourse_id' => 'required|exists:bourses,id',
+            'diplome' => 'required|string',
+            'ecole' => 'required|string',
+            'filiere' => 'required|string',
+            // Ajoutez ici la validation des fichiers uploadés si besoin
+        ]);
+        // Création du dossier
+        $dossier = Dossier::create([
+            'nom' => $request->nom,
+            'prenom' => $request->prenom,
+            'date_naissance' => $request->date_naissance,
+            'lieu_naissance' => $request->lieu_naissance,
+            'adresse' => $request->adresse,
+            'telephone' => $request->telephone,
+            'email' => $request->email,
+            'bourse_id' => $request->bourse_id,
+            'diplome' => $request->diplome,
+            'ecole' => $request->ecole,
+            'filiere' => $request->filiere,
+            'statut' => 'en attente',
+        ]);
+        // Notifier agents/admins
+        $agents = User::role('agent')->get();
+        foreach ($agents as $agent) {
+            $agent->notify(new NouvelleCandidatureNotification());
+        }
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NouvelleCandidatureNotification());
+        }
+        // Notifier l'étudiant (email)
+        // ...
+        return response()->json(['success' => true, 'message' => 'Votre dossier a bien été soumis.']);
+    }
 }
 

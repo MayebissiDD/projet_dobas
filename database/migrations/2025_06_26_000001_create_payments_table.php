@@ -10,17 +10,19 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('dossier_id')->nullable()->constrained()->onDelete('set null');
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('dossier_id')->nullable();
             $table->decimal('montant', 12, 2);
-            $table->string('statut')->default('en_attente'); // en_attente, valide, echoue, rembourse
-            $table->string('methode')->nullable(); // mobile_money, stripe, etc.
+            $table->string('statut')->default('en_attente');
+            $table->string('methode')->nullable();
             $table->string('reference')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
+            // Clés étrangères
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('dossier_id')->references('id')->on('dossiers')->onDelete('set null');
         });
     }
-
     public function down(): void
     {
         Schema::dropIfExists('payments');

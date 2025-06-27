@@ -19,6 +19,9 @@ class BourseSeeder extends Seeder
                 'date_fin' => now()->addMonths(2),
                 'ecoles_eligibles' => [1, 2, 3],
                 'filieres_eligibles' => ['Informatique', 'Mathématiques'],
+                'diplomes_eligibles' => ['Licence', 'Master'],
+                'pieces_a_fournir' => ['Lettre de motivation', 'Relevé de notes', 'Pièce d’identité'],
+                'frais_dossier' => 5000,
                 'statut' => 'actif',
             ],
             [
@@ -29,6 +32,9 @@ class BourseSeeder extends Seeder
                 'date_fin' => now()->addMonth(),
                 'ecoles_eligibles' => [2, 3],
                 'filieres_eligibles' => ['Droit', 'Économie'],
+                'diplomes_eligibles' => ['Licence'],
+                'pieces_a_fournir' => ['Lettre de motivation', 'Relevé de notes'],
+                'frais_dossier' => 3000,
                 'statut' => 'actif',
             ],
             [
@@ -39,6 +45,9 @@ class BourseSeeder extends Seeder
                 'date_fin' => now()->addMonths(3),
                 'ecoles_eligibles' => [1],
                 'filieres_eligibles' => ['Lettres', 'Histoire'],
+                'diplomes_eligibles' => ['Baccalauréat'],
+                'pieces_a_fournir' => ['Attestation de situation', 'Relevé de notes'],
+                'frais_dossier' => 0,
                 'statut' => 'actif',
             ],
             [
@@ -49,9 +58,19 @@ class BourseSeeder extends Seeder
                 'date_fin' => now()->subMonth(),
                 'ecoles_eligibles' => [1, 2],
                 'filieres_eligibles' => ['Informatique'],
+                'diplomes_eligibles' => ['Licence'],
+                'pieces_a_fournir' => ['Lettre de motivation'],
+                'frais_dossier' => 0,
                 'statut' => 'inactif',
             ],
         ];
+        foreach ($bourses as &$bourse) {
+            // Correction : s'assurer que diplômes_eligibles est toujours présent et non vide
+            if (empty($bourse['diplomes_eligibles'])) {
+                $bourse['diplomes_eligibles'] = ['Baccalauréat', 'Licence', 'Master'];
+            }
+        }
+        unset($bourse);
         foreach ($bourses as $bourse) {
             Bourse::create($bourse);
         }

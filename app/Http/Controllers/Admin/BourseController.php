@@ -71,4 +71,10 @@ class BourseController extends Controller
             'bourses' => $bourses
         ]);
     }
+
+    public function apiShow($id)
+    {
+        $bourse = Bourse::findOrFail($id);
+        return response()->json(['bourse' => $bourse]);
+    }
 }

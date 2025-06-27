@@ -31,6 +31,12 @@ Route::get('/contact', fn() => Inertia::render('Public/Contact'))->name('contact
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 Route::post('/paiement/public', [PublicPaymentController::class, 'pay'])->name('public.paiement');
 
+// API publique pour récupérer une bourse par ID (pour le formulaire Postuler)
+Route::get('/api/bourses/{id}', [BourseController::class, 'apiShow']);
+
+// API publique pour soumission finale d'un dossier public après paiement validé
+Route::post('/api/dossiers/public', [\App\Http\Controllers\Agent\DossierController::class, 'publicStore']);
+
 // --------------------
 // AUTHENTIFICATION & PROFIL
 // --------------------
