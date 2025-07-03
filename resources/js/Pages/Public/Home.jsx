@@ -4,14 +4,15 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useState, useRef } from "react"
-import { 
-  GraduationCap, 
-  Users, 
-  Award, 
-  BookOpen, 
-  TrendingUp, 
-  MapPin, 
-  Phone, 
+import heroImage from "@/assets/images/image-1.jpg"
+import {
+  GraduationCap,
+  Users,
+  Award,
+  BookOpen,
+  TrendingUp,
+  MapPin,
+  Phone,
   Mail,
   Star,
   ArrowRight,
@@ -122,23 +123,34 @@ export default function Home() {
       <div className="min-h-screen w-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
         {/* Hero Section avec animation */}
         <section className="relative h-screen overflow-hidden">
-          <div className={`absolute inset-0 bg-gradient-to-br ${heroSlides[currentSlide].gradient} transition-all duration-1000`}>
-            <div className="absolute inset-0 bg-black/30" />
+         
+           {/* Dégradé coloré avec overlay */}
+         <div className="opacity-50 absolute inset-0 z-10">
+          <div className={`absolute inset-0 z-10 bg-gradient-to-br ${heroSlides[currentSlide].gradient} bg-opacity-0 transition-all duration-1000`}>
+            <div className="absolute inset-0 bg-black/10 " />
           </div>
-          
+         </div>
+          {/* Fond image héro */}
+          <div className="absolute inset-0 z-0 opacity-70">
+            <img
+              src={heroImage}
+              alt="Fond héro"
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+
           {/* Formes géométriques animées */}
-          <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 z-20 overflow-hidden">
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-yellow-400/20 rounded-full animate-pulse" />
             <div className="absolute top-1/4 -left-8 w-16 h-16 bg-red-400/20 rounded-full animate-bounce" style={{ animationDelay: '1s' }} />
             <div className="absolute bottom-1/4 right-1/4 w-12 h-12 bg-green-400/20 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
             <div className="absolute bottom-10 left-10 w-20 h-20 bg-yellow-400/10 rotate-45 animate-spin" style={{ animationDuration: '8s' }} />
           </div>
 
-          <div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
-            <div 
-              key={currentSlide}
-              className="animate-fade-in-up"
-            >
+          {/* Contenu texte et boutons */}
+          <div className="relative z-30 h-full flex flex-col justify-center items-center text-center px-4">
+            <div key={currentSlide} className="animate-fade-in-up">
               <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
                 {heroSlides[currentSlide].title}
               </h1>
@@ -146,13 +158,13 @@ export default function Home() {
                 {heroSlides[currentSlide].subtitle}
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 group">
                 Découvrir les bourses
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">
+              <Button variant="outline" className="bg-yellow-600 hover:bg-yellow-700 border-yellow-500 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 group">
                 Postuler maintenant
               </Button>
             </div>
@@ -163,21 +175,21 @@ export default function Home() {
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    currentSlide === index ? 'bg-white scale-125' : 'bg-white/50'
-                  }`}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index ? 'bg-white scale-125' : 'bg-white/50'
+                    }`}
                 />
               ))}
             </div>
           </div>
         </section>
 
+
         {/* Section Statistiques */}
         <section className="py-16 bg-white">
           <div className="max-w-6xl mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
-                <div 
+                <div
                   key={index}
                   className="text-center group hover:transform hover:scale-105 transition-all duration-300"
                 >
@@ -207,10 +219,10 @@ export default function Home() {
                 Découvrez comment DOBAS vous accompagne dans votre parcours éducatif
               </p>
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-8">
               {services.map((service, index) => (
-                <Card 
+                <Card
                   key={index}
                   className={`${service.color} border-2 hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 group cursor-pointer`}
                 >
@@ -242,7 +254,7 @@ export default function Home() {
                 Ce que disent nos bénéficiaires
               </p>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-8">
               {testimonials.map((testimonial, index) => (
                 <Card key={index} className="hover:shadow-xl transition-shadow duration-300">
@@ -287,7 +299,7 @@ export default function Home() {
                 <p className="text-xl mb-8 text-green-100">
                   Nous sommes là pour vous accompagner dans votre parcours éducatif
                 </p>
-                
+
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
@@ -298,7 +310,7 @@ export default function Home() {
                       <div className="text-green-100">Brazzaville, République du Congo</div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
                       <Phone className="w-6 h-6" />
@@ -308,7 +320,7 @@ export default function Home() {
                       <div className="text-green-100">+242 XX XX XX XX</div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
                       <Mail className="w-6 h-6" />
@@ -327,59 +339,59 @@ export default function Home() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-6">
                     Envoyez-nous un message
                   </h3>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
                         Nom complet *
                       </label>
-                      <Input 
-                        id="nom" 
-                        name="nom" 
-                        placeholder="Jean Koussou" 
-                        required 
-                        value={form.nom} 
+                      <Input
+                        id="nom"
+                        name="nom"
+                        placeholder="Jean Koussou"
+                        required
+                        value={form.nom}
                         onChange={handleChange}
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-                    
+
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         Adresse email *
                       </label>
-                      <Input 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        placeholder="exemple@dobas.cg" 
-                        required 
-                        value={form.email} 
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="exemple@dobas.cg"
+                        required
+                        value={form.email}
                         onChange={handleChange}
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-                    
+
                     <div>
                       <label htmlFor="objet" className="block text-sm font-medium text-gray-700 mb-2">
                         Objet
                       </label>
-                      <Input 
-                        id="objet" 
-                        name="objet" 
-                        placeholder="Demande d'information sur les bourses" 
-                        value={form.objet} 
+                      <Input
+                        id="objet"
+                        name="objet"
+                        placeholder="Demande d'information sur les bourses"
+                        value={form.objet}
                         onChange={handleChange}
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-                    
+
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                         Message *
                       </label>
-                      <Textarea 
-                        id="message" 
+                      <Textarea
+                        id="message"
                         name="message"
                         placeholder="Votre message ici..."
                         required
@@ -390,7 +402,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <Button 
+                  <Button
                     onClick={handleSubmit}
                     disabled={sending}
                     className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-lg font-semibold rounded-full shadow-md transition-all duration-300 flex items-center justify-center"
