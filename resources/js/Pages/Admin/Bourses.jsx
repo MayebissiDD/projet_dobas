@@ -67,3 +67,4 @@ export default function Bourses({ bourses }) {
 }
 
 Bourses.layout = page => <AdminLayout>{page}</AdminLayout>;
+
