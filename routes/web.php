@@ -128,10 +128,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Notifications
     Route::get('/notifications', fn() => Inertia::render('Admin/Notifications'))->name('notifications');
-
+    //API publique pour récupérer une bourse par ID
+    Route::get('/api/bourses/{id}', function ($id) {
+        $bourse = \App\Models\Bourse::findOrFail($id);
+        return response()->json(['bourse' => $bourse]);
+    });
     // Paiements
     Route::post('/paiements/recu', [PaymentController::class, 'paiementRecu'])->name('paiements.recu');
     Route::get('/paiements', [AdminPaymentController::class, 'index'])->name('paiements.index');
+    // Routes paiement public Lygos (initiation + callbacks)
+    Route::post('/paiement/public', [PublicPaymentController::class, 'pay'])->name('public.paiement');
+    Route::get('/paiement/success', [PublicPaymentController::class, 'success'])->name('public.paiement.success');
+    Route::get('/paiement/failure', [PublicPaymentController::class, 'failure'])->name('public.paiement.failure');
 
     // Statistiques
     Route::get('/stats', [StatsController::class, 'dashboard'])->name('stats.dashboard');

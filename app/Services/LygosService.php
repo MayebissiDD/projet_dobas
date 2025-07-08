@@ -2,31 +2,28 @@
 
 namespace App\Services;
 
+/**
+ * Service pour gérer les interactions avec l'API Lygos.
+ */
 class LygosService
 {
-    protected string $apiKey;
-
-    public function __construct()
+    /**
+     * Récupère la clé API Lygos depuis le fichier .env.
+     *
+     * @return string|null La clé API Lygos ou null si non définie.
+     */
+    public function getApiKey()
     {
-        $this->apiKey = config('services.lygos.key');
+        return env('LYGOS_API_KEY');
     }
 
     /**
-     * Retourne la clé API Lygos utilisée pour les paiements.
+     * Récupère l'URL de base de l'API Lygos depuis le fichier .env.
+     *
+     * @return string|null L'URL de l'API Lygos ou null si non définie.
      */
-    public function getApiKey(): string
+    public function getApiUrl()
     {
-        return $this->apiKey;
-    }
-
-    /**
-     * Exemple de méthode pour effectuer un appel à l'API Lygos.
-     * À adapter selon la documentation de Lygos.
-     */
-    public function makePayment(array $data)
-    {
-        // Exemple d'utilisation de la clé
-        // $this->apiKey
-        // ...
+        return env('LYGOS_API_URL');
     }
 }

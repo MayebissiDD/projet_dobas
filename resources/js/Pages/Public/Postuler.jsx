@@ -1,57 +1,140 @@
-import PublicLayout from "@/Layouts/PublicLayout";
 import React, { useState, useEffect } from "react";
+import PublicLayout from "@/Layouts/PublicLayout";
+import { usePage } from "@inertiajs/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, User, FileText, School, CreditCard } from "lucide-react";
-import { usePage } from "@inertiajs/react";
+import { CheckCircle } from "lucide-react";
 
 export default function PostulerPage() {
+  const { url } = usePage();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bourse, setBourse] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // Récupérer l'ID de la bourse depuis l'URL
+  // Detecter succès paiement via query param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "1") {
+      setPaymentSuccess(true);
+    }
+  }, []);
+
+  // Récupérer info bourse si id dans url
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bourseId = params.get("bourse");
     if (bourseId) {
       fetch(`/api/bourses/${bourseId}`)
         .then(res => res.json())
-        .then(data => setBourse(data.bourse));
+        .then(data => setBourse(data.bourse))
+        .catch(() => setBourse(null));
     }
   }, []);
 
-  // Validation simple pour la structure (à compléter avec la logique dynamique ensuite)
-  const validateStep = (data, currentStep) => {
+  // Validation basique de la première étape
+  const validateStep = (data) => {
     const newErrors = {};
-    if (currentStep === 1) {
-      if (!data.nom) newErrors.nom = "Nom requis";
-      if (!data.prenom) newErrors.prenom = "Prénom requis";
-      if (!data.date_naissance) newErrors.date_naissance = "Date de naissance requise";
-      if (!data.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
-      if (!data.adresse) newErrors.adresse = "Adresse requise";
-      if (!data.telephone) newErrors.telephone = "Téléphone requis";
-      if (!data.email) newErrors.email = "Email requis";
-    }
+    if (!data.nom) newErrors.nom = "Nom requis";
+    if (!data.prenom) newErrors.prenom = "Prénom requis";
+    if (!data.date_naissance) newErrors.date_naissance = "Date de naissance requise";
+    if (!data.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
+    if (!data.adresse) newErrors.adresse = "Adresse requise";
+    if (!data.telephone) newErrors.telephone = "Téléphone requis";
+    if (!data.email) newErrors.email = "Email requis";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = (data) => {
-    if (validateStep(data, step)) {
-      setFormData((prev) => ({ ...prev, ...data }));
-      setStep(step + 1);
+  // Aller à l'étape suivante
+  const handleNext = () => {
+    if (step === 1 && !validateStep(formData)) return;
+    setErrors({});
+    setStep(step + 1);
+  };
+
+  // Retour à l'étape précédente
+  const handleBack = () => {
+    setErrors({});
+    setStep(step - 1);
+  };
+
+  // Gestion finale : créer candidature + paiement + redirection
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
+    setErrors({});
+
+    try {
+      // 1. Créer la candidature en statut 'en_attente'
+      const formCandidature = new FormData();
+      Object.entries(formData).forEach(([k, v]) => {
+        if (v instanceof File) {
+          formCandidature.append(k, v);
+        } else {
+          formCandidature.append(k, v ?? "");
+        }
+      });
+      formCandidature.append("bourse_id", bourse?.id ?? "");
+      formCandidature.append("statut", "en_attente");
+
+      const resCandidature = await fetch("/postuler", {
+        method: "POST",
+        body: formCandidature,
+      });
+      const dataCandidature = await resCandidature.json();
+
+      if (!dataCandidature.success) {
+        setErrors(dataCandidature.errors || { form: "Erreur lors de la création de la candidature." });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const candidatureId = dataCandidature.candidature.id;
+
+      // 2. Créer la commande de paiement liée à la candidature
+      const formPaiement = new FormData();
+      formPaiement.append("candidature_id", candidatureId);
+      formPaiement.append("montant", bourse?.frais_dossier ?? 0);
+      formPaiement.append("mode", formData.paiement_mode);
+
+      const resPaiement = await fetch("/paiement/public", {
+        method: "POST",
+        body: formPaiement,
+      });
+      const dataPaiement = await resPaiement.json();
+
+      if (dataPaiement.success && dataPaiement.link) {
+        // Redirection vers Lygos (ou Stripe)
+        window.location.href = dataPaiement.link;
+      } else {
+        setErrors({ paiement: dataPaiement.message || "Erreur lors de la création du paiement." });
+      }
+    } catch (e) {
+      setErrors({ paiement: "Erreur réseau ou serveur." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleBack = () => setStep(step - 1);
+  if (paymentSuccess) {
+    return (
+      <PublicLayout>
+        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
+          <Card className="max-w-xl p-8 text-center bg-white/95 shadow-xl rounded-lg">
+            <h2 className="text-3xl font-bold text-green-700 mb-4">🎉 Paiement réussi !</h2>
+            <p className="mb-6">Votre candidature a bien été prise en compte et sera traitée rapidement.</p>
+            <Button onClick={() => window.location.href = "/"}>Retour à l'accueil</Button>
+          </Card>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   return (
     <PublicLayout>
@@ -78,76 +161,117 @@ export default function PostulerPage() {
               </div>
             </CardHeader>
             <CardContent className="p-8">
+              {/* Étape 1 : Infos */}
               {step === 1 && (
                 <div className="space-y-6 animate-fadeIn">
                   <h3 className="text-xl font-semibold text-green-700 mb-4">Informations personnelles</h3>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label>Nom *</Label>
-                      <Input placeholder="Ex: NGOMA" onChange={e => setFormData({ ...formData, nom: e.target.value })} />
-                      {errors.nom && <p className="text-red-500 text-sm animate-pulse">{errors.nom}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Prénom *</Label>
-                      <Input placeholder="Ex: Jean-Paul" onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
-                      {errors.prenom && <p className="text-red-500 text-sm animate-pulse">{errors.prenom}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date de naissance *</Label>
-                      <Input type="date" onChange={e => setFormData({ ...formData, date_naissance: e.target.value })} />
-                      {errors.date_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.date_naissance}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Lieu de naissance *</Label>
-                      <Input placeholder="Ex: Brazzaville" onChange={e => setFormData({ ...formData, lieu_naissance: e.target.value })} />
-                      {errors.lieu_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.lieu_naissance}</p>}
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>Adresse actuelle *</Label>
-                      <Input placeholder="Ex: 12 avenue de l'Université, Brazzaville" onChange={e => setFormData({ ...formData, adresse: e.target.value })} />
-                      {errors.adresse && <p className="text-red-500 text-sm animate-pulse">{errors.adresse}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Téléphone *</Label>
-                      <Input placeholder="Ex: +242 06 123 45 67" onChange={e => setFormData({ ...formData, telephone: e.target.value })} />
-                      {errors.telephone && <p className="text-red-500 text-sm animate-pulse">{errors.telephone}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email *</Label>
-                      <Input type="email" placeholder="exemple@dobas.cg" onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                      {errors.email && <p className="text-red-500 text-sm animate-pulse">{errors.email}</p>}
-                    </div>
+                    {["nom", "prenom", "date_naissance", "lieu_naissance", "adresse", "telephone", "email"].map((field) => (
+                      <div key={field} className="space-y-2">
+                        <Label>{field.replace(/_/g, " ").toUpperCase()} *</Label>
+                        <Input
+                          type={field === "email" ? "email" : field === "date_naissance" ? "date" : "text"}
+                          onChange={e => setFormData({ ...formData, [field]: e.target.value })}
+                        />
+                        {errors[field] && <p className="text-red-500 text-sm animate-pulse">{errors[field]}</p>}
+                      </div>
+                    ))}
                   </div>
-                  <Button onClick={() => handleNext(formData)} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-105 mt-6">
-                    Continuer →
-                  </Button>
+                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
                 </div>
               )}
-              {step === 2 && bourse && (
+
+              {/* Étape 2 : Diplômes */}
+              {step === 2 && (
                 <div className="space-y-6 animate-fadeIn">
                   <h3 className="text-xl font-semibold text-green-700 mb-4">Diplôme le plus élevé obtenu</h3>
+
+                  {/* Diplôme */}
                   <div className="space-y-2">
-                    <Label>Diplôme *</Label>
+                    <Label>Intitulé du diplôme *</Label>
                     <Select onValueChange={value => setFormData({ ...formData, diplome: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez un diplôme" />
                       </SelectTrigger>
                       <SelectContent>
-                        {bourse.diplomes_eligibles?.map((d, idx) => (
-                          <SelectItem key={idx} value={d}>{d}</SelectItem>
-                        ))}
+                        <SelectItem value="CEP">Certificat d'Études Primaires (CEP)</SelectItem>
+                        <SelectItem value="BEPC">Brevet d'Études du Premier Cycle (BEPC)</SelectItem>
+                        <SelectItem value="BAC">Baccalauréat (BAC)</SelectItem>
+                        <SelectItem value="Licence">Licence</SelectItem>
+                        <SelectItem value="Master">Master</SelectItem>
+                        <SelectItem value="Doctorat">Doctorat</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={() => handleNext(formData)} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-105 mt-6">
+
+                  {/* Année d'obtention */}
+                  <div className="space-y-2">
+                    <Label>Année d'obtention *</Label>
+                    <Select onValueChange={value => setFormData({ ...formData, annee_diplome: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez une année" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 25 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return <SelectItem key={year} value={String(year)}>{year}</SelectItem>;
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Établissement */}
+                  {/* Établissement */}
+                  <div className="space-y-2">
+                    <Label>Établissement d'obtention *</Label>
+                    <Select
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, etablissement_diplome: value, autre_etablissement: "" });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez un établissement" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Lycée de la Révolution">Lycée de la Révolution</SelectItem>
+                        <SelectItem value="Lycée Chaminade">Lycée Chaminade</SelectItem>
+                        <SelectItem value="Université Marien Ngouabi">Université Marien Ngouabi</SelectItem>
+                        <SelectItem value="Université Catholique d'Afrique Centrale">Université Catholique d'Afrique Centrale</SelectItem>
+                        <SelectItem value="Autre">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Champ libre si "Autre" est sélectionné */}
+                    {formData.etablissement_diplome === "Autre" && (
+                      <div className="mt-2">
+                        <Label>Nom de l'établissement *</Label>
+                        <Input
+                          type="text"
+                          placeholder="Entrez le nom de l'établissement"
+                          value={formData.autre_etablissement || ""}
+                          onChange={(e) =>
+                            setFormData({ ...formData, autre_etablissement: e.target.value })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleNext}
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6"
+                  >
                     Continuer →
                   </Button>
                 </div>
               )}
+
+
+              {/* Étape 3 : Choix école & filière */}
               {step === 3 && bourse && (
                 <div className="space-y-6 animate-fadeIn">
                   <h3 className="text-xl font-semibold text-green-700 mb-4">Choix de l'école et de la filière</h3>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <Label>École éligible *</Label>
                     <Select onValueChange={value => setFormData({ ...formData, ecole: value })}>
                       <SelectTrigger>
@@ -160,7 +284,7 @@ export default function PostulerPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <Label>Filière éligible *</Label>
                     <Select onValueChange={value => setFormData({ ...formData, filiere: value })}>
                       <SelectTrigger>
@@ -173,11 +297,11 @@ export default function PostulerPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={() => handleNext(formData)} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-105 mt-6">
-                    Continuer →
-                  </Button>
+                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
                 </div>
               )}
+
+              {/* Étape 4 : Pièces */}
               {step === 4 && bourse && (
                 <div className="space-y-6 animate-fadeIn">
                   <h3 className="text-xl font-semibold text-green-700 mb-4">Pièces à fournir</h3>
@@ -189,11 +313,11 @@ export default function PostulerPage() {
                       </div>
                     ))}
                   </div>
-                  <Button onClick={() => handleNext(formData)} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-105 mt-6">
-                    Continuer →
-                  </Button>
+                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
                 </div>
               )}
+
+              {/* Étape 5 : Paiement */}
               {step === 5 && bourse && (
                 <div className="space-y-6 animate-fadeIn">
                   <h3 className="text-xl font-semibold text-green-700 mb-4">Paiement des frais de dossier</h3>
@@ -210,44 +334,21 @@ export default function PostulerPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button
-                    onClick={async () => {
-                      setIsSubmitting(true);
-                      setErrors({});
-                      try {
-                        const form = new FormData();
-                        Object.entries(formData).forEach(([k, v]) => form.append(k, v));
-                        form.append('bourse_id', bourse.id);
-                        form.append('montant', bourse.frais_dossier || 0);
-                        form.append('mode', formData.paiement_mode);
-                        const res = await fetch('/paiement/public', { method: 'POST', body: form });
-                        const data = await res.json();
-                        if (data.success && data.link) {
-                          window.location.href = data.link;
-                        } else {
-                          setErrors({ paiement: data.message || 'Erreur lors de la création du paiement.' });
-                        }
-                      } catch (e) {
-                        setErrors({ paiement: 'Erreur réseau ou serveur.' });
-                      } finally {
-                        setIsSubmitting(false);
-                      }
-                    }}
-                    className="w-full bg-gradient-to-r from-yellow-400 to-green-600 hover:from-yellow-500 hover:to-green-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-105"
-                    disabled={isSubmitting || !formData.paiement_mode}
-                  >
-                    {isSubmitting ? 'Redirection...' : 'Payer en ligne'}
-                  </Button>
                   {errors.paiement && <div className="text-red-500 text-center mt-2 animate-pulse">{errors.paiement}</div>}
-                  <div className="text-sm text-zinc-500 mt-2">Paiement en ligne sécurisé (Mobile Money, carte bancaire). Confirmation automatique après validation.</div>
+                  <Button
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting || !formData.paiement_mode}
+                    className="w-full bg-gradient-to-r from-yellow-400 to-green-600 hover:from-yellow-500 hover:to-green-700 text-white font-semibold py-3 mt-4"
+                  >
+                    {isSubmitting ? "Redirection..." : "Payer en ligne"}
+                  </Button>
+                  <div className="text-sm text-zinc-500 mt-2">
+                    Paiement en ligne sécurisé (Mobile Money, carte bancaire). Confirmation automatique après validation.
+                  </div>
                 </div>
               )}
-              {step > 5 && (
-                <div className="text-center text-green-600 text-xl font-bold animate-fadeIn">
-                  🎉 Votre candidature a bien été soumise et sera traitée après validation du paiement. Vous recevrez un email de confirmation.
-                </div>
-              )}
-              {step > 1 && (
+
+              {step > 1 && step <= 5 && (
                 <Button onClick={handleBack} variant="outline" className="mt-6">← Retour</Button>
               )}
             </CardContent>
