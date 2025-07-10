@@ -13,18 +13,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Création d’un utilisateur de test
-        // User::factory()->create([
-        //     'name' => 'Super Admin',
-        //     'email' => 'admin@dobas.com',
-        //     'password' => bcrypt('password'),
-        //     'role' => 'admin',
-        // ]);
-
+        
         // Appel du seeder des utilisateurs
         $this->call([
             UserSeeder::class,
             RolepermissionSeeder::class,
+            EcoleSeeder::class,
+            BourseSeeder::class,
         ]);
     }
 }

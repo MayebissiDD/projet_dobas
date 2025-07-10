@@ -14,10 +14,14 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!Auth::check() || !Auth::user()->hasRole($role)) {
+        $user = Auth::user();
+        if (!$user || !method_exists($user, 'hasRole')) {
             abort(403, 'Accès non autorisé.');
         }
-
+        /** @var \App\Models\User $user */
+        if (!$user->hasRole($role)) {
+            abort(403, 'Accès non autorisé.');
+        }
         return $next($request);
     }
 }

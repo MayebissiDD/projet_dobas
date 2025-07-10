@@ -76,7 +76,7 @@ export default function Utilisateurs({ users, roles }) {
     if (url) router.visit(url);
   };
 
-  if (!users || !Array.isArray(users.data)) {
+  if (users || !Array.isArray(users.data)) {
     return (
       <div className="text-center text-muted-foreground py-10">
         Chargement des utilisateurs...

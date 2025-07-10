@@ -4,16 +4,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCandidaturePieceTable extends Migration
+class CreateDossierPieceTable extends Migration
 {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('candidature_piece', function (Blueprint $table) {
+        Schema::create('dossier_piece', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('candidature_id')->constrained()->onDelete('cascade');
+            $table->foreignId('dossier_id')->constrained()->onDelete('cascade');
             $table->foreignId('piece_id')->constrained()->onDelete('cascade');
             $table->string('fichier'); // chemin du fichier uploadé
             $table->timestamps();

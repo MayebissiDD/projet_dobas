@@ -12,20 +12,23 @@ class DossierFactory extends Factory
     public function definition(): array
     {
         $bourse = \App\Models\Bourse::inRandomOrder()->first();
-        $school = \App\Models\School::inRandomOrder()->first();
-        $statuts = ['en attente', 'accepté', 'rejeté', 'validé'];
+        $ecole = \App\Models\Ecole::inRandomOrder()->first();
+        $statuts = ['en_attente', 'valide', 'rejete', 'incomplet'];
         return [
-            'nom' => $this->faker->name(),
+            'nom' => $this->faker->lastName(),
+            'prenom' => $this->faker->firstName(),
             'email' => $this->faker->unique()->safeEmail(),
             'bourse_id' => $bourse ? $bourse->id : null,
-            'school_id' => $school ? $school->id : null,
+            'ecole_id' => $ecole ? $ecole->id : null,
+            'filiere' => $this->faker->randomElement(['Informatique', 'Mathématiques', 'Droit', 'Lettres', 'Histoire']),
             'statut' => $this->faker->randomElement($statuts),
-            'choix_ecoles' => json_encode([
-                ['ecole' => $school ? $school->id : null, 'options' => ['Informatique', 'Mathématiques']],
-                ['ecole' => null, 'options' => ['Droit', 'Économie']],
-                ['ecole' => null, 'options' => ['Lettres', 'Histoire']],
-            ]),
-            'filiere_affectee' => $this->faker->randomElement(['Informatique', 'Mathématiques', 'Droit', 'Lettres', 'Histoire', null]),
+            'telephone' => $this->faker->phoneNumber(),
+            'niveau' => $this->faker->randomElement(['Licence', 'Master', 'Doctorat']),
+            'diplomes' => json_encode(['Bac', 'Licence']),
+            'uploads' => json_encode([]),
+            'date_soumission' => now(),
+            'commentaire' => null,
+            'etudiant_id' => \App\Models\Etudiant::inRandomOrder()->first()?->id,
         ];
     }
 }

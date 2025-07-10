@@ -2,18 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Paiement extends Model
 {
-    use HasFactory;
-
     protected $table = 'paiements';
 
     protected $fillable = [
-        'user_id',
-        'candidature_id',
+        'etudiant_id',
+        'dossier_id',
         'montant',
         'methode',
         'statut',
@@ -22,13 +20,23 @@ class Paiement extends Model
         'details',
     ];
 
-    public function user()
+    protected $casts = [
+        'details' => 'array',
+    ];
+
+    /**
+     * Le paiement appartient à un étudiant.
+     */
+    public function etudiant(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Etudiant::class, 'etudiant_id');
     }
 
-    public function candidature()
+    /**
+     * Le paiement est associé à un dossier (candidature).
+     */
+    public function dossier(): BelongsTo
     {
-        return $this->belongsTo(Candidature::class);
+        return $this->belongsTo(Dossier::class);
     }
 }

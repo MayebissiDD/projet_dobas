@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Agent;
 use App\Http\Controllers\Controller;
 use App\Models\Dossier;
 use App\Models\User;
+use App\Models\Ecole;
 use App\Notifications\NouvelleCandidatureNotification;
 use App\Notifications\DossierValideNotification;
 use App\Notifications\DossierRejeteNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class DossierController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index(Request $request)
     {
         $query = Dossier::query()->with('bourse');
@@ -43,9 +47,10 @@ class DossierController extends Controller
     public function show($id)
     {
         $dossier = Dossier::findOrFail($id);
-        $schools = \App\Models\School::all()->map(function($school) {
-            $school->placesRestantes = $school->placesRestantes();
-            return $school;
+        $this->authorize('view', $dossier);
+        $ecoles = Ecole::all()->map(function($ecole) {
+            $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
+            return $ecole;
         });
         \App\Services\ActivityLogger::log(
             'view_dossier_details',
@@ -55,19 +60,19 @@ class DossierController extends Controller
         );
         return \Inertia\Inertia::render('Agent/DossierDetails', [
             'dossier' => $dossier,
-            'schools' => $schools
+            'ecoles' => $ecoles
         ]);
     }
 
     public function create()
     {
-        $schools = \App\Models\School::all();
+        $ecoles = Ecole::all();
         $bourses = \App\Models\Bourse::where('statut', 'actif')
             ->whereDate('date_debut', '<=', now())
             ->whereDate('date_fin', '>=', now())
             ->get();
         return \Inertia\Inertia::render('Student/DossierCreate', [
-            'schools' => $schools,
+            'ecoles' => $ecoles,
             'bourses' => $bourses,
         ]);
     }
@@ -123,25 +128,33 @@ class DossierController extends Controller
         $dossier = Dossier::findOrFail($id);
         $dossier->statut = 'validé';
         $dossier->save();
-
         // Notifier l'étudiant concerné
-        $user = User::where('email', $dossier->email)->first();
+        $user = \App\Models\User::where('email', $dossier->email)->first();
         if ($user) {
-            // Si le dossier a une affectation, notification personnalisée, sinon notification simple
-            if ($dossier->school_id && $dossier->filiere_affectee) {
-                $school = \App\Models\School::find($dossier->school_id);
-                $user->notify(new DossierValideNotification($school ? $school->nom : '', $dossier->filiere_affectee));
+            if ($dossier->ecole_id && $dossier->filiere_affectee) {
+                $ecole = Ecole::find($dossier->ecole_id);
+                $user->notify(new DossierValideNotification($ecole ? $ecole->nom : '', $dossier->filiere_affectee));
             } else {
                 $user->notify(new DossierValideNotification(null, null));
+            }
+        } else if ($dossier->etudiant_id) {
+            $etudiant = \App\Models\Etudiant::find($dossier->etudiant_id);
+            if ($etudiant) {
+                if ($dossier->ecole_id && $dossier->filiere_affectee) {
+                    $ecole = Ecole::find($dossier->ecole_id);
+                    $etudiant->notify(new DossierValideNotification($ecole ? $ecole->nom : '', $dossier->filiere_affectee));
+                } else {
+                    $etudiant->notify(new DossierValideNotification(null, null));
+                }
             }
         }
 
         // Notifier les admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
-            if ($dossier->school_id && $dossier->filiere_affectee) {
-                $school = \App\Models\School::find($dossier->school_id);
-                $admin->notify(new DossierValideNotification($school ? $school->nom : '', $dossier->filiere_affectee));
+            if ($dossier->ecole_id && $dossier->filiere_affectee) {
+                $ecole = Ecole::find($dossier->ecole_id);
+                $admin->notify(new DossierValideNotification($ecole ? $ecole->nom : '', $dossier->filiere_affectee));
             } else {
                 $admin->notify(new DossierValideNotification(null, null));
             }
@@ -187,29 +200,29 @@ class DossierController extends Controller
     public function affecter(Request $request, $id)
     {
         $dossier = Dossier::findOrFail($id);
-        $school = \App\Models\School::findOrFail($request->school_id);
-        if ($school->placesRestantes() <= 0) {
-            return back()->withErrors(['school_id' => "Plus de places disponibles dans cette école."]);
+        $ecole = Ecole::findOrFail($request->ecole_id);
+        if ($ecole->capacite - $ecole->dossiers()->count() <= 0) {
+            return back()->withErrors(['ecole_id' => "Plus de places disponibles dans cette école."]);
         }
-        $dossier->school_id = $school->id;
+        $dossier->ecole_id = $ecole->id;
         $dossier->filiere_affectee = $request->filiere;
         $dossier->statut = 'accepté';
         $dossier->save();
         // Notification à l'étudiant
         $user = \App\Models\User::where('email', $dossier->email)->first();
         if ($user) {
-            $user->notify(new \App\Notifications\DossierValideNotification($school->nom, $request->filiere));
+            $user->notify(new \App\Notifications\DossierValideNotification($ecole->nom, $request->filiere));
         }
         // Notification aux admins
         $admins = \App\Models\User::role('admin')->get();
         foreach ($admins as $admin) {
-            $admin->notify(new \App\Notifications\DossierValideNotification($school->nom, $request->filiere));
+            $admin->notify(new \App\Notifications\DossierValideNotification($ecole->nom, $request->filiere));
         }
         \App\Services\ActivityLogger::log(
             'affect_dossier',
             Dossier::class,
             $dossier->id,
-            "Affectation du dossier #{$dossier->id} à l'école #{$school->id} ({$school->nom}) par un agent."
+            "Affectation du dossier #{$dossier->id} à l'école #{$ecole->id} ({$ecole->nom}) par un agent."
         );
         return back()->with('success', 'Dossier affecté à l\'école et notification envoyée.');
     }
@@ -228,10 +241,20 @@ class DossierController extends Controller
             'email' => 'required|email',
             'bourse_id' => 'required|exists:bourses,id',
             'diplome' => 'required|string',
+            'annee_diplome' => 'required|string',
             'ecole' => 'required|string',
             'filiere' => 'required|string',
-            // Ajoutez ici la validation des fichiers uploadés si besoin
+            'paiement_mode' => 'required|string',
         ]);
+        // Validation des pièces à fournir (upload)
+        $bourse = \App\Models\Bourse::findOrFail($request->bourse_id);
+        if ($bourse->pieces_a_fournir) {
+            foreach ($bourse->pieces_a_fournir as $piece) {
+                if (!$request->hasFile('piece_' . $piece)) {
+                    return response()->json(['success' => false, 'errors' => ['piece_' . $piece => 'Pièce requise']], 422);
+                }
+            }
+        }
         // Création du dossier
         $dossier = Dossier::create([
             'nom' => $request->nom,
@@ -243,10 +266,25 @@ class DossierController extends Controller
             'email' => $request->email,
             'bourse_id' => $request->bourse_id,
             'diplome' => $request->diplome,
+            'annee_diplome' => $request->annee_diplome,
             'ecole' => $request->ecole,
             'filiere' => $request->filiere,
             'statut' => 'en attente',
         ]);
+        // Stockage des pièces uploadées
+        if ($bourse->pieces_a_fournir) {
+            foreach ($bourse->pieces_a_fournir as $piece) {
+                $file = $request->file('piece_' . $piece);
+                if ($file) {
+                    $path = $file->store('dossiers/' . $dossier->id . '/pieces');
+                    \App\Models\DossierPiece::create([
+                        'dossier_id' => $dossier->id,
+                        'nom' => $piece,
+                        'fichier' => $path,
+                    ]);
+                }
+            }
+        }
         // Notifier agents/admins
         $agents = User::role('agent')->get();
         foreach ($agents as $agent) {
@@ -257,8 +295,17 @@ class DossierController extends Controller
             $admin->notify(new NouvelleCandidatureNotification());
         }
         // Notifier l'étudiant (email)
-        // ...
+        $user = User::where('email', $dossier->email)->first();
+        if ($user) {
+            $user->notify(new \App\Notifications\CandidatureSoumiseNotification($dossier));
+        }
         return response()->json(['success' => true, 'message' => 'Votre dossier a bien été soumis.']);
+    }
+
+    public function apiList()
+    {
+        $dossiers = Dossier::with(['bourse', 'user'])->latest()->paginate(20);
+        return response()->json(['dossiers' => $dossiers]);
     }
 }
 

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
+use App\Models\Bourse;
 
 // Contrôleurs
 use App\Http\Controllers\ProfileController;
@@ -11,13 +12,13 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Agent\DossierController;
 use App\Http\Controllers\Admin\ActivityLogController;
-use App\Http\Controllers\Admin\PaymentController;
-use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
-use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
-use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\PaiementController;
+use App\Http\Controllers\Student\PaiementController as StudentPaiementController;
+use App\Http\Controllers\Admin\PaiementController as AdminPaiementController;
+use App\Http\Controllers\Admin\EcoleController;
 use App\Http\Controllers\Admin\StatsController;
 use App\Http\Controllers\Admin\BourseController;
-use App\Http\Controllers\Public\PaymentController as PublicPaymentController;
+use App\Http\Controllers\Public\PaiementController as PublicPaiementController;
 
 // --------------------
 // ROUTES PUBLIQUES
@@ -29,7 +30,7 @@ Route::get('/bourses', [\App\Http\Controllers\Admin\BourseController::class, 'pu
 Route::get('/postuler', fn() => Inertia::render('Public/Postuler'))->name('postuler');
 Route::get('/contact', fn() => Inertia::render('Public/Contact'))->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
-Route::post('/paiement/public', [PublicPaymentController::class, 'pay'])->name('public.paiement');
+Route::post('/paiement/public', [PublicPaiementController::class, 'pay'])->name('public.paiement');
 
 // API publique pour récupérer une bourse par ID (pour le formulaire Postuler)
 Route::get('/api/bourses/{id}', [BourseController::class, 'apiShow']);
@@ -53,17 +54,18 @@ Route::middleware('auth')->group(function () {
 // ÉTUDIANT
 // --------------------
 
-Route::middleware(['auth', 'role:etudiant'])->prefix('etudiant')->group(function () {
+Route::middleware(['auth:etudiant'])->prefix('etudiant')->group(function () {
     Route::get('/dashboard', fn() => Inertia::render('Student/Dashboard'))->name('etudiant.dashboard');
     Route::get('/statut', fn() => Inertia::render('Student/ApplicationStatus'))->name('etudiant.status');
     Route::get('/dossiers', [DossierController::class, 'index'])->name('etudiant.dossiers.index');
     Route::get('/dossiers/{id}', [DossierController::class, 'show'])->name('etudiant.dossiers.show');
     Route::post('/dossiers', [DossierController::class, 'store'])->name('etudiant.dossiers.store');
-    Route::get('/paiements', [StudentPaymentController::class, 'index'])->name('etudiant.paiements.index');
-    Route::get('/paiement', [StudentPaymentController::class, 'webview'])->name('etudiant.paiement.webview');
-    Route::get('/paiement/lygos/callback', [StudentPaymentController::class, 'lygosCallback'])->name('etudiant.paiement.lygos.callback');
-    Route::get('/paiement/stripe/callback', [StudentPaymentController::class, 'stripeCallback'])->name('etudiant.paiement.stripe.callback');
+    Route::get('/paiements', [StudentPaiementController::class, 'index'])->name('etudiant.paiements.index');
+    Route::get('/paiement', [StudentPaiementController::class, 'webview'])->name('etudiant.paiement.webview');
+    Route::get('/paiement/lygos/callback', [StudentPaiementController::class, 'lygosCallback'])->name('etudiant.paiement.lygos.callback');
+    Route::get('/paiement/stripe/callback', [StudentPaiementController::class, 'stripeCallback'])->name('etudiant.paiement.stripe.callback');
     Route::get('/dossiers/create', [DossierController::class, 'create'])->name('etudiant.dossiers.create');
+    Route::get('/paiement/lygos/status', [StudentPaiementController::class, 'lygosStatus'])->name('etudiant.paiement.lygos.status');
 });
 
 // --------------------
@@ -96,7 +98,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     })->name('dashboard');
 
     // Utilisateurs
-    Route::get('/utilisateurs', fn() => Inertia::render('Admin/Utilisateurs'))->name('utilisateurs');
+    Route::get('/utilisateurs', [UserController::class, 'index'])->name('utilisateurs');
     Route::post('/utilisateurs/{user}/role', [UserController::class, 'assignRole'])->name('utilisateurs.assignRole');
 
     // Dossiers
@@ -119,12 +121,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('/bourses/{id}', [BourseController::class, 'destroy'])->name('bourses.destroy');
 
     // Écoles
-    Route::get('/ecoles', [SchoolController::class, 'index'])->name('ecoles.index');
-    Route::get('/ecoles/create', [SchoolController::class, 'create'])->name('ecoles.create');
-    Route::post('/ecoles', [SchoolController::class, 'store'])->name('ecoles.store');
-    Route::get('/ecoles/{id}/edit', [SchoolController::class, 'edit'])->name('ecoles.edit');
-    Route::put('/ecoles/{id}', [SchoolController::class, 'update'])->name('ecoles.update');
-    Route::delete('/ecoles/{id}', [SchoolController::class, 'destroy'])->name('ecoles.destroy');
+    Route::get('/ecoles', [EcoleController::class, 'index'])->name('ecoles.index');
+    Route::get('/ecoles/create', [EcoleController::class, 'create'])->name('ecoles.create');
+    Route::post('/ecoles', [EcoleController::class, 'store'])->name('ecoles.store');
+    Route::get('/ecoles/{id}/edit', [EcoleController::class, 'edit'])->name('ecoles.edit');
+    Route::put('/ecoles/{id}', [EcoleController::class, 'update'])->name('ecoles.update');
+    Route::delete('/ecoles/{id}', [EcoleController::class, 'destroy'])->name('ecoles.destroy');
 
     // Notifications
     Route::get('/notifications', fn() => Inertia::render('Admin/Notifications'))->name('notifications');
@@ -134,14 +136,31 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         return response()->json(['bourse' => $bourse]);
     });
     // Paiements
-    Route::post('/paiements/recu', [PaymentController::class, 'paiementRecu'])->name('paiements.recu');
-    Route::get('/paiements', [AdminPaymentController::class, 'index'])->name('paiements.index');
+    Route::post('/paiements/recu', [PaiementController::class, 'paiementRecu'])->name('paiements.recu');
+    Route::get('/paiements', [AdminPaiementController::class, 'index'])->name('paiements.index');
     // Routes paiement public Lygos (initiation + callbacks)
-    Route::post('/paiement/public', [PublicPaymentController::class, 'pay'])->name('public.paiement');
-    Route::get('/paiement/success', [PublicPaymentController::class, 'success'])->name('public.paiement.success');
-    Route::get('/paiement/failure', [PublicPaymentController::class, 'failure'])->name('public.paiement.failure');
+    Route::post('/paiement/public', [PublicPaiementController::class, 'pay'])->name('public.paiement');
+    Route::get('/paiement/success', [PublicPaiementController::class, 'success'])->name('public.paiement.success');
+    Route::get('/paiement/failure', [PublicPaiementController::class, 'failure'])->name('public.paiement.failure');
 
     // Statistiques
     Route::get('/stats', [StatsController::class, 'dashboard'])->name('stats.dashboard');
     Route::get('/stats/export-csv', [StatsController::class, 'exportCsv'])->name('stats.export.csv');
+});
+
+// --------------------
+// API PUBLIQUES POUR LE FRONT DYNAMIQUE
+// --------------------
+
+// Liste paginée/filtrée de toutes les bourses actives
+Route::get('/api/bourses', [BourseController::class, 'apiList']);
+// Liste de toutes les écoles avec filières
+Route::get('/api/ecoles', [EcoleController::class, 'apiList']);
+// Liste de toutes les filières
+Route::get('/api/filieres', function() {
+    return response()->json(['filieres' => \App\Models\Filiere::all()]);
+});
+// Liste de toutes les pièces à fournir
+Route::get('/api/pieces', function() {
+    return response()->json(['pieces' => \App\Models\Piece::all()]);
 });

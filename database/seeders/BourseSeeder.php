@@ -3,26 +3,25 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Ecole;
 use App\Models\Bourse;
-use App\Models\School;
 
 class BourseSeeder extends Seeder
 {
     public function run(): void
     {
-        $schools = School::all();
+        // On récupère les écoles avec leurs filières
+        $ecoles = Ecole::with('filieres')->get();
 
-        $schoolNames = $schools->pluck('nom')->toArray();
+        // Noms des écoles
+        $ecoleNames = $ecoles->pluck('nom')->toArray();
 
-        $allFilieres = $schools
+        // Liste de toutes les filières disponibles
+        $allFilieres = $ecoles
             ->pluck('filieres')
-            ->map(function ($f) {
-                $arr = json_decode($f, true);
-                return is_array($arr) ? $arr : [];
-            })
             ->flatten()
+            ->pluck('nom')
             ->unique()
-            ->values()
             ->toArray();
 
         $bourses = [
@@ -32,8 +31,8 @@ class BourseSeeder extends Seeder
                 'montant' => 1000000,
                 'date_debut' => now()->subMonth(),
                 'date_fin' => now()->addMonths(2),
-                'ecoles_eligibles' => [$schoolNames[0], $schoolNames[1]],
-                'filieres_eligibles' => ['Informatique', 'Mathématiques'],
+                'ecoles_eligibles' => array_slice($ecoleNames, 0, 2),
+                'filieres_eligibles' => array_slice($allFilieres, 0, 2),
                 'diplomes_eligibles' => ['Licence', 'Master'],
                 'pieces_a_fournir' => ['Lettre de motivation', 'Relevé de notes', 'Pièce d’identité'],
                 'frais_dossier' => 5000,
@@ -45,7 +44,7 @@ class BourseSeeder extends Seeder
                 'montant' => 700000,
                 'date_debut' => now()->subDays(10),
                 'date_fin' => now()->addMonth(),
-                'ecoles_eligibles' => [$schoolNames[1], $schoolNames[2]],
+                'ecoles_eligibles' => array_slice($ecoleNames, 1, 2),
                 'filieres_eligibles' => ['Droit', 'Économie'],
                 'diplomes_eligibles' => ['Licence'],
                 'pieces_a_fournir' => ['Lettre de motivation', 'Relevé de notes'],
@@ -58,7 +57,7 @@ class BourseSeeder extends Seeder
                 'montant' => 500000,
                 'date_debut' => now()->subDays(5),
                 'date_fin' => now()->addMonths(3),
-                'ecoles_eligibles' => [$schoolNames[0]],
+                'ecoles_eligibles' => [$ecoleNames[0] ?? 'Université de Brazzaville'],
                 'filieres_eligibles' => ['Lettres', 'Histoire'],
                 'diplomes_eligibles' => ['Baccalauréat'],
                 'pieces_a_fournir' => ['Attestation de situation', 'Relevé de notes'],
@@ -71,7 +70,7 @@ class BourseSeeder extends Seeder
                 'montant' => 300000,
                 'date_debut' => now()->subMonths(3),
                 'date_fin' => now()->subMonth(),
-                'ecoles_eligibles' => [$schoolNames[0], $schoolNames[1]],
+                'ecoles_eligibles' => array_slice($ecoleNames, 0, 2),
                 'filieres_eligibles' => ['Informatique'],
                 'diplomes_eligibles' => ['Licence'],
                 'pieces_a_fournir' => ['Lettre de motivation'],

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dossier;
-use App\Models\School;
+use App\Models\Ecole;
 use App\Models\Paiement;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,18 +24,18 @@ class StatsController extends Controller
         $valides = (clone $query)->where('statut', 'validé')->count();
         $rejetes = (clone $query)->where('statut', 'rejeté')->count();
         $en_attente = (clone $query)->where('statut', 'en attente')->count();
-        $paiements = \App\Models\Payment::where('statut', 'valide')->sum('montant');
+        $paiements = Paiement::where('statut', 'valide')->sum('montant');
 
-        $parEcole = \App\Models\School::withCount(['dossiers' => function($q) use ($request) {
+        $parEcole = Ecole::withCount(['dossiers' => function($q) use ($request) {
             if ($request->filled('bourse_id')) {
                 $q->where('bourse_id', $request->bourse_id);
             }
-        }])->get()->map(function($s) {
-            $s->taux_remplissage = $s->capacite ? round(100 * $s->dossiers_count / $s->capacite, 1) : null;
-            return $s;
+        }])->get()->map(function($e) {
+            $e->taux_remplissage = $e->capacite ? round(100 * $e->dossiers_count / $e->capacite, 1) : null;
+            return $e;
         });
 
-        $parFiliere = Dossier::select('filiere_affectee', \DB::raw('count(*) as total'))
+        $parFiliere = Dossier::select('filiere_affectee', DB::raw('count(*) as total'))
             ->whereNotNull('filiere_affectee')
             ->when($request->filled('bourse_id'), function($q) use ($request) {
                 $q->where('bourse_id', $request->bourse_id);
@@ -70,7 +70,7 @@ class StatsController extends Controller
 
     public function exportCsv(Request $request)
     {
-        $query = \App\Models\Dossier::with(['bourse', 'school']);
+        $query = Dossier::with(['bourse', 'ecole']);
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
         }
@@ -80,8 +80,8 @@ class StatsController extends Controller
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->school_id);
+        if ($request->filled('ecole_id')) {
+            $query->where('ecole_id', $request->ecole_id);
         }
         if ($request->filled('bourse_id')) {
             $query->where('bourse_id', $request->bourse_id);
@@ -101,7 +101,7 @@ class StatsController extends Controller
                     $dossier->email,
                     $dossier->bourse ? $dossier->bourse->nom : '',
                     $dossier->statut,
-                    $dossier->school ? $dossier->school->nom : '',
+                    $dossier->ecole ? $dossier->ecole->nom : '',
                     $dossier->filiere_affectee,
                     $dossier->created_at,
                 ]);

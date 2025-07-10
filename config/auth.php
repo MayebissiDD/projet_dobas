@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
@@ -40,6 +39,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'etudiant' => [
+            'driver' => 'session',
+            'provider' => 'etudiants',
+        ],
     ],
 
     /*
@@ -64,11 +67,10 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'etudiants' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Etudiant::class,
+        ],
     ],
 
     /*
@@ -111,5 +113,4 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
-
 ];

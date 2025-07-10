@@ -11,19 +11,23 @@ class School extends Model
 
     protected $fillable = [
         'nom',
-        'logo',
-        'promoteur',
-        'contacts',
-        'filieres',
+        'ville',
         'capacite',
-        'adresse',
-        'autres',
     ];
+
+    public function filieres()
+    {
+        return $this->hasMany(Filiere::class);
+    }
 
     public function dossiers()
     {
         return $this->hasMany(Dossier::class);
     }
-    // Suppression du modèle School, utiliser Ecole
-    // public function placesRestantes() { ... }
+
+    public function placesRestantes()
+    {
+        // Capacité - nombre de dossiers affectés à cette école
+        return $this->capacite - $this->dossiers()->count();
+    }
 }

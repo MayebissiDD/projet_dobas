@@ -75,6 +75,23 @@ class BourseController extends Controller
     public function apiShow($id)
     {
         $bourse = Bourse::findOrFail($id);
+        // Ajout des champs dynamiques pour le front
+        $bourse->diplomes_eligibles = $bourse->diplomes_eligibles ?? ["BAC", "Licence", "Master", "Doctorat"];
+        $bourse->ecoles_eligibles = $bourse->ecoles_eligibles ?? [];
+        $bourse->filieres_eligibles = $bourse->filieres_eligibles ?? [];
+        $bourse->pieces_a_fournir = $bourse->pieces_a_fournir ?? [];
+        $bourse->frais_dossier = $bourse->frais_dossier ?? 0;
         return response()->json(['bourse' => $bourse]);
+    }
+
+    public function apiList()
+    {
+        $bourses = Bourse::where('statut', 'actif')
+            ->whereDate('date_debut', '<=', now())
+            ->whereDate('date_fin', '>=', now())
+            ->with(['dossiers'])
+            ->orderBy('date_debut', 'desc')
+            ->get();
+        return response()->json(['bourses' => $bourses]);
     }
 }

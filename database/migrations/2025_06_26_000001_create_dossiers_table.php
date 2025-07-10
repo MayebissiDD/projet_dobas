@@ -15,13 +15,13 @@ return new class extends Migration
     {
         Schema::create('dossiers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); // Lien vers l'étudiant
+            $table->unsignedBigInteger('etudiant_id'); // Lien vers l'étudiant
             $table->unsignedBigInteger('bourse_id'); // Lien vers la bourse
+            $table->unsignedBigInteger('ecole_id'); // Lien vers l'école
             $table->string('nom');
             $table->string('prenom');
             $table->string('email');
             $table->string('telephone')->nullable();
-            $table->string('ecole');
             $table->string('filiere');
             $table->string('niveau')->nullable(); // ex: Licence, Master
             $table->json('diplomes')->nullable(); // Liste des diplômes (multi-étapes)
@@ -32,8 +32,9 @@ return new class extends Migration
             $table->timestamps();
 
             // Clés étrangères
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('etudiant_id')->references('id')->on('etudiants')->onDelete('cascade');
             $table->foreign('bourse_id')->references('id')->on('bourses')->onDelete('cascade');
+            $table->foreign('ecole_id')->references('id')->on('ecoles')->onDelete('cascade');
             // Pas de clé étrangère payment_id ici pour éviter les cycles
         });
     }

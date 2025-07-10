@@ -33,17 +33,21 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::user();
+        $guard = Auth::getDefaultDriver();
 
-        if ($user->hasRole('admin')) {
-            return redirect('/admin/dashboard');
-        } elseif ($user->hasRole('agent')) {
-            return redirect('/agent/dossiers');
-        } elseif ($user->hasRole('etudiant')) {
+        // Redirection selon le type d'utilisateur
+        if ($guard === 'etudiant' || $user instanceof \App\Models\Etudiant) {
             return redirect('/etudiant/dashboard');
-        } else {
-            Auth::logout();
-            return redirect('/login')->withErrors(['email' => 'Rôle utilisateur invalide.']);
+        } elseif ($user && method_exists($user, 'hasRole')) {
+            /** @var \App\Models\User $user */
+            if ($user->hasRole('admin')) {
+                return redirect('/admin/dashboard');
+            } elseif ($user->hasRole('agent')) {
+                return redirect('/agent/dossiers');
+            }
         }
+        Auth::logout();
+        return redirect('/login')->withErrors(['email' => 'Rôle utilisateur invalide.']);
     }
 
 

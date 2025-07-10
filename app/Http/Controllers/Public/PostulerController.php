@@ -1,10 +1,9 @@
 <?php
-
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Candidature;
+use App\Models\Dossier;
 use App\Models\Paiement;
 use App\Models\Piece;
 use App\Models\User;
@@ -12,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\CandidatureSoumiseNotification;
@@ -32,6 +30,8 @@ class PostulerController extends Controller
             'diplome' => 'required|string',
             'ecole' => 'required|string',
             'filiere' => 'required|string',
+            'niveau' => 'required|string',
+            'type_bourse' => 'required|string',
             'paiement_mode' => 'required|string',
             'bourse_id' => 'required|integer',
             'montant' => 'required|integer',
@@ -43,17 +43,16 @@ class PostulerController extends Controller
 
         $formData = $request->all();
 
-        // Sauvegarder les fichiers temporairement et enregistrer les chemins
+        // Stocker temporairement les fichiers
         $uploadedFiles = [];
         foreach ($request->allFiles() as $key => $file) {
             $path = $file->store('temp/pieces');
             $uploadedFiles[$key] = $path;
         }
 
-        Session::put('candidature_data', $formData);
-        Session::put('candidature_files', $uploadedFiles);
+        Session::put('dossier_data', $formData);
+        Session::put('dossier_files', $uploadedFiles);
 
-        // Redirection vers le paiement (Stripe / Lygos)
         return response()->json([
             'success' => true,
             'redirect' => route('payment.initiate', ['mode' => $formData['paiement_mode']])
@@ -62,17 +61,16 @@ class PostulerController extends Controller
 
     public function finalize(Request $request)
     {
-        $data = Session::get('candidature_data');
-        $files = Session::get('candidature_files');
+        $data = Session::get('dossier_data');
+        $files = Session::get('dossier_files');
 
         if (!$data || !$files) {
-            return response()->json(['success' => false, 'message' => 'Données manquantes ou expirées.'], 400);
+            return response()->json(['success' => false, 'message' => 'Données expirées ou manquantes.'], 400);
         }
 
         DB::beginTransaction();
 
         try {
-            // Créer ou récupérer l'utilisateur
             $user = User::firstOrCreate(
                 ['email' => $data['email']],
                 [
@@ -82,26 +80,25 @@ class PostulerController extends Controller
                 ]
             );
 
-            $candidature = Candidature::create([
+            $dossier = Dossier::create([
                 'user_id' => $user->id,
+                'bourse_id' => $data['bourse_id'],
                 'nom' => $data['nom'],
                 'prenom' => $data['prenom'],
-                'date_naissance' => $data['date_naissance'],
-                'lieu_naissance' => $data['lieu_naissance'],
-                'adresse' => $data['adresse'],
-                'telephone' => $data['telephone'],
                 'email' => $data['email'],
-                'diplome' => $data['diplome'],
+                'telephone' => $data['telephone'],
                 'ecole' => $data['ecole'],
                 'filiere' => $data['filiere'],
-                'statut' => 'en_attente'
+                'diplomes' => json_encode([$data['diplome']]),
+                'statut' => 'en_attente',
+                'date_soumission' => now()
             ]);
 
             foreach ($files as $key => $filePath) {
-                $newPath = str_replace('temp/', 'pieces_candidature/', $filePath);
+                $newPath = str_replace('temp/', 'pieces_dossier/', $filePath);
                 Storage::move($filePath, $newPath);
-                DB::table('candidature_piece')->insert([
-                    'candidature_id' => $candidature->id,
+                DB::table('dossier_piece')->insert([
+                    'dossier_id' => $dossier->id,
                     'piece_id' => $this->resolvePieceId($key),
                     'fichier' => $newPath,
                     'created_at' => now(),
@@ -111,16 +108,16 @@ class PostulerController extends Controller
 
             Paiement::create([
                 'user_id' => $user->id,
-                'candidature_id' => $candidature->id,
+                'dossier_id' => $dossier->id,
                 'montant' => $data['montant'],
                 'methode' => $data['paiement_mode'],
                 'statut' => 'payé',
                 'reference' => strtoupper(Str::random(10))
             ]);
 
-            Notification::route('mail', $user->email)->notify(new CandidatureSoumiseNotification($candidature));
+            Notification::route('mail', $user->email)->notify(new CandidatureSoumiseNotification($dossier));
 
-            Session::forget(['candidature_data', 'candidature_files']);
+            Session::forget(['dossier_data', 'dossier_files']);
             DB::commit();
 
             return redirect('/postuler?success=1');

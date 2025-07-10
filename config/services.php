@@ -36,6 +36,7 @@ return [
 
     // Lygos payment service
     'lygos' => [
-        'key' => env('LYGOS_API_KEY'),
+        'api_key' => env('LYGOS_API_KEY'),
+        'api_url' => env('LYGOS_API_URL', 'https://api.lygosapp.com/v1/'),
     ],
 ];

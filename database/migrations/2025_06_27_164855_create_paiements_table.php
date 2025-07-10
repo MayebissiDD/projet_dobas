@@ -13,14 +13,14 @@ class CreatePaiementsTable extends Migration
     {
         Schema::create('paiements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('candidature_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('etudiant_id')->constrained('etudiants')->onDelete('cascade');
+            $table->foreignId('dossier_id')->nullable()->constrained()->onDelete('cascade');
             $table->integer('montant');
-            $table->string('methode'); // lygos, stripe, mobile_money, etc.
-            $table->string('statut')->default('en_attente'); // en_attente, payé, échoué
+            $table->string('methode');
+            $table->string('statut')->default('en_attente');
             $table->string('reference')->nullable();
             $table->string('transaction_id')->nullable();
-            $table->json('details')->nullable(); // réponse API
+            $table->json('details')->nullable();
             $table->timestamps();
         });
     }
