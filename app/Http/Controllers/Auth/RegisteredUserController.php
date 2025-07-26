@@ -4,20 +4,20 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Etudiant;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
-use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Affiche la vue d’enregistrement
      */
     public function create(): Response
     {
@@ -25,34 +25,45 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Enregistre un nouvel utilisateur (agent ou étudiant)
      */
-   public function store(Request $request): RedirectResponse
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        'role' => ['required', 'in:etudiant,agent'],
-    ]);
+    public function store(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email|unique:etudiants,email',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['required', 'in:agent,etudiant'],
+        ]);
 
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-    ]);
+        if ($request->role === 'etudiant') {
+            // ✅ Enregistrement dans la table "etudiants"
+            $etudiant = Etudiant::create([
+                'nom' => $request->name,
+                'prenom' => '',
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
 
-    $user->assignRole($request->role); // Spatie ici
+            Auth::guard('etudiant')->login($etudiant);
+            return redirect()->intended('/etudiant/dashboard');
+        }
 
-    event(new Registered($user));
+        // ✅ Enregistrement dans la table "users" (agent)
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-    Auth::login($user);
+        $user->assignRole($request->role);
 
-    return redirect()->intended(match ($request->role) {
-        'agent' => '/agent/dossiers',
-        'etudiant' => '/etudiant/dashboard',
-    });
-}
+        event(new Registered($user));
+
+        Auth::login($user);
+
+        return redirect()->intended(
+            $request->role === 'agent' ? '/agent/dashboard' : '/admin/dashboard'
+        );
+    }
 }

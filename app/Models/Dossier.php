@@ -11,6 +11,8 @@ class Dossier extends Model
     protected $fillable = [
         'etudiant_id',
         'bourse_id',
+        'ecole_id',        // Nouveau
+        'filiere_id',      // Nouveau
         'nom',
         'prenom',
         'date_naissance',
@@ -20,8 +22,6 @@ class Dossier extends Model
         'telephone',
         'diplome',
         'annee_diplome',
-        'ecole',
-        'filiere',
         'paiement_mode',
         'statut',
         'niveau',
@@ -37,35 +37,33 @@ class Dossier extends Model
         'date_soumission' => 'datetime',
     ];
 
-    /**
-     * Le dossier appartient à un étudiant.
-     */
     public function etudiant(): BelongsTo
     {
         return $this->belongsTo(Etudiant::class, 'etudiant_id');
     }
 
-    /**
-     * Le dossier est lié à une bourse.
-     */
     public function bourse(): BelongsTo
     {
         return $this->belongsTo(Bourse::class);
     }
 
-    /**
-     * Le dossier peut avoir plusieurs paiements.
-     */
     public function paiements(): HasMany
     {
         return $this->hasMany(Paiement::class);
     }
 
-    /**
-     * Le dossier peut avoir plusieurs pièces justificatives.
-     */
     public function pieces(): HasMany
     {
         return $this->hasMany(DossierPiece::class, 'dossier_id');
+    }
+
+    public function ecole(): BelongsTo
+    {
+        return $this->belongsTo(Ecole::class, 'ecole_id');
+    }
+
+    public function filiere(): BelongsTo
+    {
+        return $this->belongsTo(Filiere::class, 'filiere_id');
     }
 }

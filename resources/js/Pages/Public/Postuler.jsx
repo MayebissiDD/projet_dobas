@@ -171,6 +171,7 @@ export default function PostulerPage() {
       }
     } catch (e) {
       setErrors({ paiement: "Erreur réseau ou serveur." });
+      console.error("Erreur lors de la soumission du dossier :", e);
     } finally {
       setIsSubmitting(false);
     }

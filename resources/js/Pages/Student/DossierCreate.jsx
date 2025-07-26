@@ -12,7 +12,7 @@ const steps = [
   'Récapitulatif'
 ];
 
-export default function DossierCreate({ schools, bourses }) {
+export default function DossierCreate({ ecoles, bourses }) {
   const { errors } = usePage().props;
   const [step, setStep] = useState(0);
   const [values, setValues] = useState({
@@ -97,7 +97,7 @@ export default function DossierCreate({ schools, bourses }) {
                   <label className="block mb-1">École #{i + 1} (obligatoire)</label>
                   <select value={choix.ecole} onChange={e => handleChoixChange(i, 'ecole', e.target.value)} className="form-select w-full mb-2">
                     <option value="">Sélectionner une école</option>
-                    {schools.map(s => <option key={s.id} value={s.id}>{s.nom}</option>)}
+                    {ecoles.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                   </select>
                   <label className="block mb-1">Options/filières (au moins 2)</label>
                   {[0, 1].map(j => (

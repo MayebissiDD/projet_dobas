@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-export default function Paiements({ payments = [], filters = {} }) {
+export default function Paiements({ paiements = [], filters = {} }) {
   const [statut, setStatut] = useState(filters.statut || '');
   const [methode, setMethode] = useState(filters.methode || '');
 
@@ -35,7 +35,7 @@ export default function Paiements({ payments = [], filters = {} }) {
           <thead className="bg-zinc-100 dark:bg-zinc-700">
             <tr>
               <th className="px-4 py-2">#</th>
-              <th className="px-4 py-2">Utilisateur</th>
+              <th className="px-4 py-2">Étudiant</th>
               <th className="px-4 py-2">Dossier</th>
               <th className="px-4 py-2">Montant</th>
               <th className="px-4 py-2">Statut</th>
@@ -45,10 +45,10 @@ export default function Paiements({ payments = [], filters = {} }) {
             </tr>
           </thead>
           <tbody>
-            {payments.data?.map((p) => (
+            {paiements.data?.map((p) => (
               <tr key={p.id} className="border-t dark:border-zinc-600">
                 <td className="px-4 py-2">#{p.id}</td>
-                <td className="text-center">{p.user?.name || '-'}</td>
+                <td className="text-center">{p.etudiant?.nom || '-'}</td>
                 <td className="text-center">{p.dossier?.id || '-'}</td>
                 <td className="text-center">{p.montant} FCFA</td>
                 <td className="text-center">{p.statut}</td>

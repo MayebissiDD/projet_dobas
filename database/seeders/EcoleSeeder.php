@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Ecole;
-use App\Models\Filiere;
 
 class EcoleSeeder extends Seeder
 {
@@ -13,37 +12,38 @@ class EcoleSeeder extends Seeder
         $ecoles = [
             [
                 'nom' => 'Université de Brazzaville',
-                'ville' => 'Brazzaville',
+                'promoteur' => 'État',
+                'contacts' => '0123456789',
+                'filieres' => 'Informatique,Mathématiques,Lettres',
                 'capacite' => 100,
-                'filieres' => ['Informatique', 'Mathématiques', 'Lettres'],
+                'adresse' => 'Brazzaville',
+                'autres' => null,
+                'logo' => null,
             ],
             [
                 'nom' => 'Institut Polytechnique de Pointe-Noire',
-                'ville' => 'Pointe-Noire',
+                'promoteur' => 'État',
+                'contacts' => '0987654321',
+                'filieres' => 'Économie,Droit,Histoire',
                 'capacite' => 80,
-                'filieres' => ['Économie', 'Droit', 'Histoire'],
+                'adresse' => 'Pointe-Noire',
+                'autres' => null,
+                'logo' => null,
             ],
             [
                 'nom' => 'École Normale Supérieure',
-                'ville' => 'Brazzaville',
+                'promoteur' => 'État',
+                'contacts' => '0112233445',
+                'filieres' => 'Lettres,Histoire,Mathématiques',
                 'capacite' => 60,
-                'filieres' => ['Lettres', 'Histoire', 'Mathématiques'],
+                'adresse' => 'Brazzaville',
+                'autres' => null,
+                'logo' => null,
             ],
         ];
 
         foreach ($ecoles as $data) {
-            $ecole = Ecole::create([
-                'nom' => $data['nom'],
-                'ville' => $data['ville'],
-                'capacite' => $data['capacite'],
-            ]);
-
-            foreach ($data['filieres'] as $nomFiliere) {
-                Filiere::create([
-                    'nom' => $nomFiliere,
-                    'ecole_id' => $ecole->id,
-                ]);
-            }
+            Ecole::create($data);
         }
     }
 }

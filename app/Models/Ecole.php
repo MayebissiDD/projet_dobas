@@ -34,6 +34,13 @@ class Ecole extends Model
     }
 
     /**
+     * Relation : Une école a plusieurs dossiers
+     */
+    public function dossiers()
+    {
+        return $this->hasMany(Dossier::class, 'ecole_id');
+    }
+    /**
      * Une école peut être éligible à plusieurs bourses (stockées en JSON dans `bourses`).
      * Cette relation est virtuelle, donc pas de belongsToMany ici sauf si tu normalises la relation via une table pivot.
      */

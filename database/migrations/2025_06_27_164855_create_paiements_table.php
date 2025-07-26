@@ -20,6 +20,7 @@ class CreatePaiementsTable extends Migration
             $table->string('statut')->default('en_attente');
             $table->string('reference')->nullable();
             $table->string('transaction_id')->nullable();
+            $table->date('date_paiement')->nullable();
             $table->json('details')->nullable();
             $table->timestamps();
         });

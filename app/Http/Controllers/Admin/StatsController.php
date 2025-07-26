@@ -4,110 +4,134 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dossier;
-use App\Models\Ecole;
 use App\Models\Paiement;
+use App\Models\User;
+use App\Models\Ecole;
+use App\Models\Bourse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
-    public function dashboard(Request $request)
+    /**
+     * Affiche la page des statistiques.
+     */
+    public function index(Request $request)
     {
-        $bourses = \App\Models\Bourse::orderBy('nom')->get(['id', 'nom']);
+        // --- Filtres dynamiques ---
         $query = Dossier::query();
+
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
         if ($request->filled('bourse_id')) {
             $query->where('bourse_id', $request->bourse_id);
         }
-        $total = $query->count();
-        $acceptes = (clone $query)->where('statut', 'accepté')->count();
-        $valides = (clone $query)->where('statut', 'validé')->count();
-        $rejetes = (clone $query)->where('statut', 'rejeté')->count();
-        $en_attente = (clone $query)->where('statut', 'en attente')->count();
-        $paiements = Paiement::where('statut', 'valide')->sum('montant');
 
-        $parEcole = Ecole::withCount(['dossiers' => function($q) use ($request) {
-            if ($request->filled('bourse_id')) {
-                $q->where('bourse_id', $request->bourse_id);
-            }
-        }])->get()->map(function($e) {
-            $e->taux_remplissage = $e->capacite ? round(100 * $e->dossiers_count / $e->capacite, 1) : null;
-            return $e;
-        });
+        if ($request->filled('school_id')) {
+            $query->where('school_id', $request->school_id);
+        }
 
-        $parFiliere = Dossier::select('filiere_affectee', DB::raw('count(*) as total'))
-            ->whereNotNull('filiere_affectee')
-            ->when($request->filled('bourse_id'), function($q) use ($request) {
-                $q->where('bourse_id', $request->bourse_id);
-            })
-            ->groupBy('filiere_affectee')
+        // --- Statistiques globales ---
+        $stats = [
+            'total'       => $query->count(),
+            'acceptes'    => (clone $query)->where('statut', 'accepté')->count(),
+            'valides'     => (clone $query)->where('statut', 'validé')->count(),
+            'rejetes'     => (clone $query)->where('statut', 'rejeté')->count(),
+            'en_attente'  => (clone $query)->where('statut', 'en attente')->count(),
+            'paiements'   => Paiement::sum('montant'),
+        ];
+
+        // --- Totaux (Utilisateurs, Écoles, Bourses, Filières) ---
+        $totals = [
+            'users'    => User::count(),
+            'ecoles'   => Ecole::count(),
+            'bourses'  => Bourse::count(),
+            'filieres' => Dossier::distinct('filiere')->count('filiere'),
+        ];
+
+        // --- Répartition par école ---
+        $parEcole = Ecole::select('id', 'nom')
+            ->withCount(['dossiers' => function ($q) use ($request) {
+                if ($request->filled('from')) $q->whereDate('created_at', '>=', $request->from);
+                if ($request->filled('to')) $q->whereDate('created_at', '<=', $request->to);
+            }])
+            ->get()
+            ->map(function ($ecole) {
+                $ecole->taux_remplissage = $ecole->dossiers_count > 0 ? round(($ecole->dossiers_count / 100) * 100, 2) : 0;
+                return $ecole;
+            });
+
+        // --- Répartition par filière ---
+        $parFiliere = Dossier::select('filiere', DB::raw('COUNT(*) as total'))
+            ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
+            ->when($request->filled('to'), fn($q) => $q->whereDate('created_at', '<=', $request->to))
+            ->groupBy('filiere')
             ->get();
 
-        $parMois = Dossier::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mois, count(*) as total')
-            ->when($request->filled('bourse_id'), function($q) use ($request) {
-                $q->where('bourse_id', $request->bourse_id);
-            })
+        // --- Évolution par mois ---
+        $parMois = Dossier::select(
+                DB::raw("DATE_FORMAT(created_at, '%Y-%m') as mois"),
+                DB::raw("COUNT(*) as total")
+            )
+            ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
+            ->when($request->filled('to'), fn($q) => $q->whereDate('created_at', '<=', $request->to))
             ->groupBy('mois')
             ->orderBy('mois')
             ->get();
 
+        // --- Retour vers la vue Inertia ---
         return Inertia::render('Admin/DashboardStats', [
-            'stats' => [
-                'total' => $total,
-                'acceptes' => $acceptes,
-                'valides' => $valides,
-                'rejetes' => $rejetes,
-                'en_attente' => $en_attente,
-                'paiements' => $paiements,
-            ],
+            'stats'    => $stats,
+            'totals'   => $totals,
             'parEcole' => $parEcole,
             'parFiliere' => $parFiliere,
-            'parMois' => $parMois,
-            'bourses' => $bourses,
-            'selectedBourse' => $request->bourse_id,
+            'parMois'  => $parMois,
+            'bourses'  => Bourse::select('id', 'nom')->get(),
+            'filters'  => $request->only('from', 'to', 'statut', 'bourse_id', 'school_id'),
         ]);
     }
 
+    /**
+     * Export des statistiques en CSV.
+     */
     public function exportCsv(Request $request)
     {
-        $query = Dossier::with(['bourse', 'ecole']);
-        if ($request->filled('from')) {
-            $query->whereDate('created_at', '>=', $request->from);
+        $query = Dossier::query();
+
+        if ($request->filled('from')) $query->whereDate('created_at', '>=', $request->from);
+        if ($request->filled('to')) $query->whereDate('created_at', '<=', $request->to);
+        if ($request->filled('statut')) $query->where('statut', $request->statut);
+
+        $dossiers = $query->get(['id', 'nom', 'prenom', 'email', 'statut', 'created_at']);
+
+        $filename = 'stats_' . now()->format('Y_m_d_His') . '.csv';
+        $handle = fopen($filename, 'w+');
+        fputcsv($handle, ['ID', 'Nom', 'Prénom', 'Email', 'Statut', 'Date']);
+
+        foreach ($dossiers as $dossier) {
+            fputcsv($handle, [
+                $dossier->id,
+                $dossier->nom,
+                $dossier->prenom,
+                $dossier->email,
+                $dossier->statut,
+                $dossier->created_at->format('Y-m-d'),
+            ]);
         }
-        if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->to);
-        }
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-        if ($request->filled('ecole_id')) {
-            $query->where('ecole_id', $request->ecole_id);
-        }
-        if ($request->filled('bourse_id')) {
-            $query->where('bourse_id', $request->bourse_id);
-        }
-        $dossiers = $query->get();
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="dossiers.csv"',
-        ];
-        $callback = function () use ($dossiers) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Nom', 'Email', 'Bourse', 'Statut', 'École', 'Filière', 'Date']);
-            foreach ($dossiers as $dossier) {
-                fputcsv($handle, [
-                    $dossier->id,
-                    $dossier->nom,
-                    $dossier->email,
-                    $dossier->bourse ? $dossier->bourse->nom : '',
-                    $dossier->statut,
-                    $dossier->ecole ? $dossier->ecole->nom : '',
-                    $dossier->filiere_affectee,
-                    $dossier->created_at,
-                ]);
-            }
-            fclose($handle);
-        };
-        return response()->stream($callback, 200, $headers);
+
+        fclose($handle);
+
+        return response()->download($filename)->deleteFileAfterSend(true);
     }
 }
