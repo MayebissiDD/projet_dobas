@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\User;
+use App\Models\Etudiant;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -27,15 +28,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
 
-        $guard = Auth::getDefaultDriver();
-        $user = Auth::user();
-
-        // 🎯 Redirection selon le guard
-        if ($guard === 'etudiant' || $user instanceof \App\Models\Etudiant) {
+        // Vérifie quel guard est actif
+        if (Auth::guard('etudiant')->check()) {
             return redirect()->intended('/etudiant/dashboard');
         }
 
-        if ($user instanceof User) {
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+
             if ($user->hasRole('admin')) {
                 return redirect()->intended('/admin/dashboard');
             }
@@ -43,18 +43,25 @@ class AuthenticatedSessionController extends Controller
             if ($user->hasRole('agent')) {
                 return redirect()->intended('/agent/dashboard');
             }
+
+            // Par défaut
+            return redirect()->intended('/dashboard');
         }
 
-        // 🔒 Si aucun rôle valide trouvé
+        // Aucun utilisateur trouvé
         Auth::logout();
         return redirect('/login')->withErrors([
-            'email' => 'Rôle utilisateur invalide.',
+            'email' => 'Aucun utilisateur trouvé.',
         ]);
     }
 
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+        } elseif (Auth::guard('etudiant')->check()) {
+            Auth::guard('etudiant')->logout();
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

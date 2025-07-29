@@ -11,41 +11,35 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Crée les rôles si pas déjà faits
-        Role::firstOrCreate(['name' => 'admin']);
-        Role::firstOrCreate(['name' => 'agent']);
-        Role::firstOrCreate(['name' => 'etudiant']);
+        // Création des rôles s'ils n'existent pas déjà
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $agentRole = Role::firstOrCreate(['name' => 'agent']);
+        $studentRole = Role::firstOrCreate(['name' => 'etudiant']);
 
-        // Admin
-        $admin = User::create([
-            'name' => 'Super Admin',
-            'email' => 'admin@dobas.cg',
-            'password' => Hash::make('admin1234'),
-        ]);
-        $admin->assignRole('admin');
+        // Création ou mise à jour de l'utilisateur admin
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@dobas.cg'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make('admin1234'),
+            ]
+        );
+        $admin->syncRoles([$adminRole]);
 
-        // Agent
-        $agent = User::create([
-            'name' => 'Agent DOBAS',
-            'email' => 'agent@dobas.cg',
-            'password' => Hash::make('agent1234'),
-        ]);
-        $agent->assignRole('agent');
+        // Création ou mise à jour de l'agent
+        $agent = User::updateOrCreate(
+            ['email' => 'agent@dobas.cg'],
+            [
+                'name' => 'Agent DOBAS',
+                'password' => Hash::make('agent1234'),
+            ]
+        );
+        $agent->syncRoles([$agentRole]);
 
-        // Étudiants
-        for ($i = 1; $i <= 5; $i++) {
-            $student = User::create([
-                'name' => "Etudiant $i",
-                'email' => "etudiant$i@dobas.cg",
-                'password' => Hash::make('etudiant1234'),
-            ]);
-            $student->assignRole('etudiant');
-        }
 
-        // Affichage console pour la démo
-        echo "\n[DEMO] Connexions de test :\n";
-        echo "Admin    : admin@dobas.cg / admin1234\n";
-        echo "Agent    : agent@dobas.cg / agent1234\n";
-        echo "Etudiant : etudiant1@dobas.cg / etudiant1234\n";
+        // Affichage console
+        $this->command->info("✨ Comptes de démonstration créés :");
+        $this->command->line("🔐 Admin     : admin@dobas.cg     / admin1234");
+        $this->command->line("👨‍💼 Agent     : agent@dobas.cg     / agent1234");
     }
 }

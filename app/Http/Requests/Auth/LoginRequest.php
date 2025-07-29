@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Autorise tous les utilisateurs à faire cette requête.
      */
     public function authorize(): bool
     {
@@ -20,9 +20,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * Règles de validation pour la connexion.
      */
     public function rules(): array
     {
@@ -33,7 +31,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Tente d'authentifier l'utilisateur via le guard approprié.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -41,32 +39,38 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // Tente d'abord sur le guard web (users)
-        if (Auth::guard('web')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('email', 'password');
+
+        // Essai via le guard 'web' (admin / agent)
+        if (Auth::guard('web')->attempt($credentials, $this->boolean('remember'))) {
             Auth::shouldUse('web');
             RateLimiter::clear($this->throttleKey());
             return;
         }
-        // Sinon, tente sur le guard etudiant
-        if (Auth::guard('etudiant')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+
+        // Sinon essai via le guard 'etudiant'
+        if (Auth::guard('etudiant')->attempt($credentials, $this->boolean('remember'))) {
             Auth::shouldUse('etudiant');
             RateLimiter::clear($this->throttleKey());
             return;
         }
+
+        // Échec d'authentification
         RateLimiter::hit($this->throttleKey());
+
         throw ValidationException::withMessages([
-            'email' => trans('auth.failed'),
+            'email' => __('auth.failed'),
         ]);
     }
 
     /**
-     * Ensure the login request is not rate limited.
+     * Vérifie que la tentative de connexion n'est pas limitée.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
@@ -83,10 +87,10 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Clé unique utilisée pour le throttle (limitation de requêtes).
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->input('email')) . '|' . $this->ip());
     }
 }

@@ -7,24 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Upload, AlertCircle } from "lucide-react";
 import { villesCongo, niveaux } from "@/utils/congoData";
 
 export default function PostulerPage() {
   const { url } = usePage();
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    nationalite: "Congolaise" // Pré-remplie
+  });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bourse, setBourse] = useState(null);
-  const [paiementSuccess, setpaiementSuccess] = useState(false);
-
-  // Données dynamiques pour le front
   const [bourses, setBourses] = useState([]);
-  const [ecoles, setEcoles] = useState([]);
-  const [filieres, setFilieres] = useState([]);
-  const [pieces, setPieces] = useState([]);
-  const [typeBourse, setTypeBourse] = useState("");
+  const [etablissements, setEtablissements] = useState([]);
+  const [paiementSuccess, setpaiementSuccess] = useState(false);
 
   // Detecter succès paiement via query param
   useEffect(() => {
@@ -34,163 +30,178 @@ export default function PostulerPage() {
     }
   }, []);
 
-  // Récupérer info bourse si id dans url
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const bourseId = params.get("bourse");
-    if (bourseId) {
-      fetch(`/api/bourses/${bourseId}`)
-        .then(res => res.json())
-        .then(data => setBourse(data.bourse))
-        .catch(() => setBourse(null));
-    }
-  }, []);
-
-  // Charger toutes les bourses dynamiquement au chargement
+  // Charger données dynamiques
   useEffect(() => {
     fetch('/api/bourses')
       .then(res => res.json())
       .then(data => setBourses(data.bourses || []));
-    fetch('/api/ecoles')
+    fetch('/api/etablissements')
       .then(res => res.json())
-      .then(data => setEcoles(data.ecoles || []));
-    fetch('/api/filieres')
-      .then(res => res.json())
-      .then(data => setFilieres(data.filieres || []));
-    fetch('/api/pieces')
-      .then(res => res.json())
-      .then(data => setPieces(data.pieces || []));
+      .then(data => setEtablissements(data.etablissements || []));
   }, []);
 
-  // Sauvegarde progressive dans le localStorage à chaque changement de formData
+  // Sauvegarde progressive dans le localStorage
   useEffect(() => {
     localStorage.setItem('postulerFormData', JSON.stringify(formData));
   }, [formData]);
 
-  // Au chargement, restaurer les données si présentes
+  // Restaurer les données au chargement
   useEffect(() => {
     const saved = localStorage.getItem('postulerFormData');
     if (saved) {
-      setFormData(JSON.parse(saved));
+      const savedData = JSON.parse(saved);
+      setFormData({ ...savedData, nationalite: "Congolaise" }); // Forcer nationalité
     }
   }, []);
 
-  // Validation basique de la première étape
-  const validateStep = (data) => {
+  // Validation par étape
+  const validateStep = (stepNumber) => {
     const newErrors = {};
-    if (!data.nom) newErrors.nom = "Nom requis";
-    if (!data.prenom) newErrors.prenom = "Prénom requis";
-    if (!data.date_naissance) newErrors.date_naissance = "Date de naissance requise";
-    if (!data.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
-    if (!data.adresse) newErrors.adresse = "Adresse requise";
-    if (!data.telephone) newErrors.telephone = "Téléphone requis";
-    if (!data.email) newErrors.email = "Email requis";
+    
+    switch(stepNumber) {
+      case 1:
+        if (!formData.nom) newErrors.nom = "Nom complet requis";
+        if (!formData.date_naissance) newErrors.date_naissance = "Date de naissance requise";
+        if (!formData.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
+        if (!formData.telephone) newErrors.telephone = "Téléphone requis";
+        if (!formData.email) newErrors.email = "Email requis";
+        if (!formData.sexe) newErrors.sexe = "Sexe requis";
+        if (!formData.adresse) newErrors.adresse = "Adresse actuelle requise";
+        if (!formData.niveau_etude) newErrors.niveau_etude = "Niveau d'étude requis";
+        if (!formData.moyenne && !formData.cas_social) newErrors.moyenne = "Moyenne requise ou cochez 'cas social'";
+        if (!formData.photo_identite) newErrors.photo_identite = "Photo d'identité requise";
+        break;
+      
+      case 2:
+        if (!formData.casier_judiciaire) newErrors.casier_judiciaire = "Casier judiciaire requis";
+        if (!formData.certificat_nationalite) newErrors.certificat_nationalite = "Certificat de nationalité requis";
+        if (!formData.attestation_bac) newErrors.attestation_bac = "Attestation de réussite au BAC requise";
+        if (!formData.certificat_medical) newErrors.certificat_medical = "Certificat médical requis";
+        if (!formData.acte_naissance) newErrors.acte_naissance = "Acte de naissance requis";
+        if (formData.type_bourse === "étrangère" && !formData.passeport) {
+          newErrors.passeport = "Passeport requis pour bourse étrangère";
+        }
+        break;
+      
+      case 3:
+        if (!formData.type_bourse) newErrors.type_bourse = "Type de bourse requis";
+        if (!formData.etablissement) newErrors.etablissement = "Établissement demandé requis";
+        if (formData.type_bourse === "étrangère" && !formData.pays_souhaite) {
+          newErrors.pays_souhaite = "Pays souhaité requis pour bourse étrangère";
+        }
+        break;
+      
+      case 4:
+        if (!formData.mode_paiement) newErrors.mode_paiement = "Mode de paiement requis";
+        if (!formData.certification) newErrors.certification = "Vous devez certifier l'exactitude des informations";
+        break;
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Aller à l'étape suivante
+  // Gestion des fichiers avec validation
+  const handleFileUpload = (field, file) => {
+    if (!file) return;
+    
+    // Vérification taille (max 5Mo)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ ...errors, [field]: "Fichier trop volumineux (max 5Mo)" });
+      return;
+    }
+    
+    // Vérification format
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      setErrors({ ...errors, [field]: "Format non supporté (PDF, JPG, PNG uniquement)" });
+      return;
+    }
+    
+    setFormData({ ...formData, [field]: file });
+    setErrors({ ...errors, [field]: undefined });
+  };
+
+  // Navigation
   const handleNext = () => {
-    if (step === 1 && !validateStep(formData)) return;
-    setErrors({});
+    if (!validateStep(step)) return;
     setStep(step + 1);
   };
 
-  // Retour à l'étape précédente
   const handleBack = () => {
     setErrors({});
     setStep(step - 1);
   };
 
-  // Gestion finale : créer dossier + paiement + redirection
+  // Soumission finale
   const handleFinalSubmit = async () => {
+    if (!validateStep(4)) return;
+    
     setIsSubmitting(true);
     setErrors({});
 
     try {
-      // 1. Validation stricte côté front (avant envoi)
-      const requiredFields = [
-        'nom', 'prenom', 'date_naissance', 'lieu_naissance', 'adresse', 'telephone', 'email',
-        'diplome', 'annee_diplome', 'ecole', 'filiere', 'paiement_mode'
-      ];
-      const missing = requiredFields.filter(f => !formData[f]);
-      if (missing.length > 0) {
-        setErrors({ form: 'Veuillez remplir tous les champs obligatoires.' });
-        setIsSubmitting(false);
-        return;
-      }
-      // 2. Validation des pièces à fournir
-      if (bourse?.pieces_a_fournir) {
-        for (const piece of bourse.pieces_a_fournir) {
-          if (!formData[`piece_${piece}`]) {
-            setErrors({ form: `Veuillez joindre la pièce : ${piece}` });
-            setIsSubmitting(false);
-            return;
-          }
-        }
-      }
-      // 3. Construction du FormData pour upload
-      const formdossier = new FormData();
-      Object.entries(formData).forEach(([k, v]) => {
-        if (v instanceof File) {
-          formdossier.append(k, v);
+      const formDataToSend = new FormData();
+      
+      // Ajouter tous les champs
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formDataToSend.append(key, value);
         } else {
-          formdossier.append(k, v ?? "");
+          formDataToSend.append(key, value ?? "");
         }
       });
-      formdossier.append("bourse_id", bourse?.id ?? "");
-      formdossier.append("statut", "en attente");
-      // 4. Envoi au backend (route API publique)
-      const resDossier = await fetch("/api/dossiers/public", {
+
+      // Envoi du dossier
+      const response = await fetch("/api/dossiers/public", {
         method: "POST",
-        body: formdossier,
+        body: formDataToSend,
       });
-      const dataDossier = await resDossier.json();
-      if (!dataDossier.success) {
-        setErrors(dataDossier.errors || { form: "Erreur lors de la création du dossier." });
-        setIsSubmitting(false);
-        return;
-      }
-      // 5. Paiement (initiation)
-      const formPaiement = new FormData();
-      formPaiement.append("fullName", `${formData.prenom} ${formData.nom}`);
-      formPaiement.append("email", formData.email);
-      formPaiement.append("telephone", formData.telephone);
-      formPaiement.append("type_bourse", bourse?.nom ?? "");
-      formPaiement.append("montant", bourse?.frais_dossier ?? 0);
-      formPaiement.append("mode", formData.paiement_mode);
-      const resPaiement = await fetch("/paiement/public", {
-        method: "POST",
-        body: formPaiement,
-      });
-      const dataPaiement = await resPaiement.json();
-      if (dataPaiement.success && dataPaiement.link) {
-        window.location.href = dataPaiement.link;
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Redirection vers paiement ou confirmation
+        if (formData.mode_paiement === "mobile_money" || formData.mode_paiement === "carte") {
+          // Initier paiement en ligne
+          const paiementData = new FormData();
+          paiementData.append("fullName", formData.nom);
+          paiementData.append("email", formData.email);
+          paiementData.append("telephone", formData.telephone);
+          paiementData.append("montant", "7500");
+          paiementData.append("mode", formData.mode_paiement);
+          
+          const paiementResponse = await fetch("/paiement/public", {
+            method: "POST",
+            body: paiementData,
+          });
+          
+          const paiementResult = await paiementResponse.json();
+          if (paiementResult.success && paiementResult.link) {
+            window.location.href = paiementResult.link;
+          }
+        } else {
+          // Paiement physique - rediriger vers page de confirmation
+          setpaiementSuccess(true);
+        }
       } else {
-        setErrors({ paiement: dataPaiement.message || "Erreur lors de la création du paiement." });
+        setErrors(data.errors || { form: "Erreur lors de la soumission" });
       }
-    } catch (e) {
-      setErrors({ paiement: "Erreur réseau ou serveur." });
-      console.error("Erreur lors de la soumission du dossier :", e);
+    } catch (error) {
+      setErrors({ form: "Erreur réseau. Veuillez réessayer." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Étape 2 : Diplômes dynamiques selon la bourse
-  const getDiplomesEligibles = () => {
-    if (bourse && Array.isArray(bourse.diplomes_eligibles) && bourse.diplomes_eligibles.length > 0) {
-      return bourse.diplomes_eligibles;
-    }
-    // fallback valeurs par défaut si non défini
-    return [
-      "CEP",
-      "BEPC",
-      "BAC",
-      "Licence",
-      "Master",
-      "Doctorat"
-    ];
+  // Filtrage établissements selon type de bourse
+  const getEtablissementsFiltered = () => {
+    if (!formData.type_bourse) return [];
+    return etablissements.filter(etab => {
+      if (formData.type_bourse === "locale") return etab.type === "local";
+      if (formData.type_bourse === "étrangère") return etab.type === "etranger";
+      return etab.type === "aide_scolaire";
+    });
   };
 
   if (paiementSuccess) {
@@ -198,8 +209,8 @@ export default function PostulerPage() {
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
           <Card className="max-w-xl p-8 text-center bg-white/95 shadow-xl rounded-lg">
-            <h2 className="text-3xl font-bold text-green-700 mb-4">🎉 Paiement réussi !</h2>
-            <p className="mb-6">Votre dossier a bien été prise en compte et sera traitée rapidement.</p>
+            <h2 className="text-3xl font-bold text-green-700 mb-4">🎉 Candidature soumise !</h2>
+            <p className="mb-6">Votre dossier a été reçu et sera traité dans les plus brefs délais.</p>
             <Button onClick={() => window.location.href = "/"}>Retour à l'accueil</Button>
           </Card>
         </div>
@@ -210,54 +221,70 @@ export default function PostulerPage() {
   return (
     <PublicLayout>
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-red-50 py-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 text-white">
               <CardTitle className="text-2xl text-center font-bold">
-                Formulaire de dossier {bourse ? `- ${bourse.nom}` : "- Bourse Post-Bac"}
+                Formulaire de Candidature - DOBAS
               </CardTitle>
               <div className="flex justify-between items-center mt-6 mb-4">
-                {["Infos", "Diplômes", "Choix", "Pièces", "Paiement"].map((label, idx) => (
+                {["Identification", "Pièces", "Bourse", "Paiement"].map((label, idx) => (
                   <div key={idx} className="flex flex-col items-center">
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step > idx + 1 ? 'bg-white text-green-600' : step === idx + 1 ? 'bg-green-600 text-white scale-110 animate-pulse' : 'bg-white/30 text-white/60'}`}>
-                      {step > idx + 1 ? <CheckCircle className="h-5 w-5" /> : idx + 1}
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
+                      step > idx + 1 ? 'bg-white text-green-600' : 
+                      step === idx + 1 ? 'bg-green-600 text-white scale-110 animate-pulse' : 
+                      'bg-white/30 text-white/60'
+                    }`}>
+                      {step > idx + 1 ? <CheckCircle className="h-6 w-6" /> : idx + 1}
                     </div>
-                    <span className={`text-xs mt-2 font-medium ${step >= idx + 1 ? 'text-white' : 'text-white/60'}`}>{label}</span>
+                    <span className={`text-sm mt-2 font-medium ${step >= idx + 1 ? 'text-white' : 'text-white/60'}`}>
+                      {label}
+                    </span>
                   </div>
                 ))}
               </div>
               <div className="relative">
-                <Progress value={(step / 5) * 100} className="h-2 bg-white/20" />
-                <div className="absolute top-0 left-0 h-2 bg-gradient-to-r from-white via-white/80 to-white/60 rounded-full transition-all duration-700 ease-out" style={{ width: `${(step / 5) * 100}%` }}></div>
+                <Progress value={(step / 4) * 100} className="h-3 bg-white/20" />
+                <div 
+                  className="absolute top-0 left-0 h-3 bg-gradient-to-r from-white via-white/80 to-white/60 rounded-full transition-all duration-700 ease-out" 
+                  style={{ width: `${(step / 4) * 100}%` }}
+                ></div>
               </div>
             </CardHeader>
+
             <CardContent className="p-8">
-              {/* Étape 1 : Infos */}
+              {/* Étape 1 : Identification du candidat */}
               {step === 1 && (
                 <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-xl font-semibold text-green-700 mb-4">Informations personnelles</h3>
+                  <h3 className="text-xl font-semibold text-green-700 mb-6">1. Identification du candidat</h3>
+                  
                   <div className="grid md:grid-cols-2 gap-6">
-                    {/* Nom, Prénom, Date de naissance, Ville de naissance (select), Adresse, Téléphone, Email */}
                     <div className="space-y-2">
-                      <Label>NOM *</Label>
-                      <Input type="text" onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+                      <Label>Nom complet *</Label>
+                      <Input 
+                        type="text" 
+                        placeholder="Ex: Jean MBEMBA"
+                        value={formData.nom || ""}
+                        onChange={e => setFormData({ ...formData, nom: e.target.value })} 
+                      />
                       {errors.nom && <p className="text-red-500 text-sm animate-pulse">{errors.nom}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label>PRÉNOM *</Label>
-                      <Input type="text" onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
-                      {errors.prenom && <p className="text-red-500 text-sm animate-pulse">{errors.prenom}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>DATE DE NAISSANCE *</Label>
-                      <Input type="date" onChange={e => setFormData({ ...formData, date_naissance: e.target.value })} />
+                      <Label>Date de naissance *</Label>
+                      <Input 
+                        type="date" 
+                        value={formData.date_naissance || ""}
+                        onChange={e => setFormData({ ...formData, date_naissance: e.target.value })} 
+                      />
                       {errors.date_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.date_naissance}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label>VILLE DE NAISSANCE *</Label>
+                      <Label>Lieu de naissance *</Label>
                       <Select onValueChange={value => setFormData({ ...formData, lieu_naissance: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une ville" />
+                          <SelectValue placeholder="Sélectionnez votre ville de naissance" />
                         </SelectTrigger>
                         <SelectContent>
                           {villesCongo.map((ville, idx) => (
@@ -267,263 +294,394 @@ export default function PostulerPage() {
                       </Select>
                       {errors.lieu_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.lieu_naissance}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label>ADRESSE *</Label>
-                      <Input type="text" onChange={e => setFormData({ ...formData, adresse: e.target.value })} />
-                      {errors.adresse && <p className="text-red-500 text-sm animate-pulse">{errors.adresse}</p>}
+                      <Label>Nationalité</Label>
+                      <Input value="Congolaise" disabled className="bg-gray-100" />
                     </div>
+
                     <div className="space-y-2">
-                      <Label>TÉLÉPHONE *</Label>
-                      <Input type="text" onChange={e => setFormData({ ...formData, telephone: e.target.value })} />
+                      <Label>Téléphone *</Label>
+                      <Input 
+                        type="tel" 
+                        placeholder="Ex: +242 06 123 45 67"
+                        value={formData.telephone || ""}
+                        onChange={e => setFormData({ ...formData, telephone: e.target.value })} 
+                      />
                       {errors.telephone && <p className="text-red-500 text-sm animate-pulse">{errors.telephone}</p>}
                     </div>
+
                     <div className="space-y-2">
-                      <Label>EMAIL *</Label>
-                      <Input type="email" onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                      <Label>Email *</Label>
+                      <Input 
+                        type="email" 
+                        placeholder="Ex: jean.mbemba@email.com"
+                        value={formData.email || ""}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })} 
+                      />
                       {errors.email && <p className="text-red-500 text-sm animate-pulse">{errors.email}</p>}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Sexe *</Label>
+                      <Select onValueChange={value => setFormData({ ...formData, sexe: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez votre sexe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Masculin">Masculin</SelectItem>
+                          <SelectItem value="Féminin">Féminin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.sexe && <p className="text-red-500 text-sm animate-pulse">{errors.sexe}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Adresse actuelle *</Label>
+                      <Input 
+                        type="text" 
+                        placeholder="Ex: Quartier Mpila, Rue 123, Brazzaville"
+                        value={formData.adresse || ""}
+                        onChange={e => setFormData({ ...formData, adresse: e.target.value })} 
+                      />
+                      {errors.adresse && <p className="text-red-500 text-sm animate-pulse">{errors.adresse}</p>}
+                    </div>
                   </div>
-                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Niveau d'étude *</Label>
+                      <Select onValueChange={value => setFormData({ ...formData, niveau_etude: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez votre niveau" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Bac Technique">Bac Technique</SelectItem>
+                          <SelectItem value="BET">BET (Brevet d'Études Techniques)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.niveau_etude && <p className="text-red-500 text-sm animate-pulse">{errors.niveau_etude}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Moyenne obtenue</Label>
+                      <Input 
+                        type="number" 
+                        step="0.01"
+                        placeholder="Ex: 12.50"
+                        value={formData.moyenne || ""}
+                        onChange={e => setFormData({ ...formData, moyenne: e.target.value, cas_social: false })} 
+                        disabled={formData.cas_social}
+                      />
+                      <div className="flex items-center space-x-2 mt-2">
+                        <input 
+                          type="checkbox" 
+                          id="cas_social"
+                          checked={formData.cas_social || false}
+                          onChange={e => setFormData({ 
+                            ...formData, 
+                            cas_social: e.target.checked,
+                            moyenne: e.target.checked ? "" : formData.moyenne
+                          })} 
+                        />
+                        <Label htmlFor="cas_social" className="text-sm">Cas social (pas de moyenne)</Label>
+                      </div>
+                      {errors.moyenne && <p className="text-red-500 text-sm animate-pulse">{errors.moyenne}</p>}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Photo d'identité *</Label>
+                    <Input 
+                      type="file" 
+                      accept=".jpg,.jpeg,.png"
+                      onChange={e => handleFileUpload('photo_identite', e.target.files[0])}
+                    />
+                    <p className="text-xs text-gray-500">Photo récente, format JPG/PNG, max 5Mo</p>
+                    {errors.photo_identite && <p className="text-red-500 text-sm animate-pulse">{errors.photo_identite}</p>}
+                  </div>
+
+                  <Button 
+                    onClick={handleNext} 
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6"
+                  >
+                    Continuer → Pièces justificatives
+                  </Button>
                 </div>
               )}
 
-              {/* Étape 2 : Diplômes */}
+              {/* Étape 2 : Pièces justificatives */}
               {step === 2 && (
                 <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-xl font-semibold text-green-700 mb-4">Diplôme le plus élevé obtenu</h3>
-                  {/* Diplôme dynamique */}
-                  <div className="space-y-2">
-                    <Label>Intitulé du diplôme *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, diplome: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un diplôme" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getDiplomesEligibles().map((diplome, idx) => (
-                          <SelectItem key={idx} value={diplome}>{diplome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <h3 className="text-xl font-semibold text-green-700 mb-6">2. Pièces justificatives</h3>
+                  <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-5 w-5 text-blue-600" />
+                      <p className="text-blue-800 text-sm">
+                        Toutes les pièces doivent dater de moins de 3 mois (sauf acte de naissance)
+                      </p>
+                    </div>
                   </div>
-                  {/* Année d'obtention */}
-                  <div className="space-y-2">
-                    <Label>Année d'obtention *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, annee_diplome: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez une année" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 25 }, (_, i) => {
-                          const year = new Date().getFullYear() - i;
-                          return <SelectItem key={year} value={String(year)}>{year}</SelectItem>;
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Établissement */}
-                  <div className="space-y-2">
-                    <Label>Établissement d'obtention *</Label>
-                    <Select
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, etablissement_diplome: value, autre_etablissement: "" });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un établissement" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Lycée de la Révolution">Lycée de la Révolution</SelectItem>
-                        <SelectItem value="Lycée Chaminade">Lycée Chaminade</SelectItem>
-                        <SelectItem value="Université Marien Ngouabi">Université Marien Ngouabi</SelectItem>
-                        <SelectItem value="Université Catholique d'Afrique Centrale">Université Catholique d'Afrique Centrale</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {/* Champ libre si "Autre" est sélectionné */}
-                    {formData.etablissement_diplome === "Autre" && (
-                      <div className="mt-2">
-                        <Label>Nom de l'établissement *</Label>
-                        <Input
-                          type="text"
-                          placeholder="Entrez le nom de l'établissement"
-                          value={formData.autre_etablissement || ""}
-                          onChange={(e) =>
-                            setFormData({ ...formData, autre_etablissement: e.target.value })
-                          }
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Casier judiciaire *</Label>
+                      <Input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => handleFileUpload('casier_judiciaire', e.target.files[0])}
+                      />
+                      <p className="text-xs text-gray-500">PDF ou image, moins de 3 mois</p>
+                      {errors.casier_judiciaire && <p className="text-red-500 text-sm animate-pulse">{errors.casier_judiciaire}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Certificat de nationalité *</Label>
+                      <Input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => handleFileUpload('certificat_nationalite', e.target.files[0])}
+                      />
+                      <p className="text-xs text-gray-500">PDF ou image, moins de 3 mois</p>
+                      {errors.certificat_nationalite && <p className="text-red-500 text-sm animate-pulse">{errors.certificat_nationalite}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Attestation de réussite au BAC *</Label>
+                      <Input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => handleFileUpload('attestation_bac', e.target.files[0])}
+                      />
+                      <p className="text-xs text-gray-500">PDF ou image de votre attestation de réussite</p>
+                      {errors.attestation_bac && <p className="text-red-500 text-sm animate-pulse">{errors.attestation_bac}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Certificat médical *</Label>
+                      <Input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => handleFileUpload('certificat_medical', e.target.files[0])}
+                      />
+                      <p className="text-xs text-gray-500">Délivré par un médecin du METP, moins de 3 mois</p>
+                      {errors.certificat_medical && <p className="text-red-500 text-sm animate-pulse">{errors.certificat_medical}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Acte de naissance *</Label>
+                      <Input 
+                        type="file" 
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={e => handleFileUpload('acte_naissance', e.target.files[0])}
+                      />
+                      <p className="text-xs text-gray-500">Photocopie couleur de votre acte de naissance</p>
+                      {errors.acte_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.acte_naissance}</p>}
+                    </div>
+
+                    {formData.type_bourse === "étrangère" && (
+                      <div className="space-y-2">
+                        <Label>Passeport valide *</Label>
+                        <Input 
+                          type="file" 
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={e => handleFileUpload('passeport', e.target.files[0])}
                         />
+                        <p className="text-xs text-gray-500">Passeport en cours de validité (requis pour bourse étrangère)</p>
+                        {errors.passeport && <p className="text-red-500 text-sm animate-pulse">{errors.passeport}</p>}
                       </div>
                     )}
                   </div>
-                  {/* Justificatif du diplôme */}
-                  <div className="space-y-2">
-                    <Label>Justificatif du diplôme (PDF/JPG, max 2Mo) *</Label>
-                    <Input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={e => {
-                        const file = e.target.files[0];
-                        if (file && file.size > 2 * 1024 * 1024) {
-                          setErrors({ ...errors, justificatif_diplome: "Fichier trop volumineux (max 2Mo)" });
-                        } else {
-                          setFormData({ ...formData, justificatif_diplome: file });
-                          setErrors({ ...errors, justificatif_diplome: undefined });
-                        }
-                      }}
-                    />
-                    {errors.justificatif_diplome && <p className="text-red-500 text-sm animate-pulse">{errors.justificatif_diplome}</p>}
+
+                  <div className="flex space-x-4">
+                    <Button onClick={handleBack} variant="outline" className="flex-1">
+                      ← Retour
+                    </Button>
+                    <Button 
+                      onClick={handleNext} 
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3"
+                    >
+                      Continuer → Choix de bourse
+                    </Button>
                   </div>
-                  <Button
-                    onClick={handleNext}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6"
-                  >
-                    Continuer →
-                  </Button>
                 </div>
               )}
 
-
-              {/* Étape 3 : Choix bourse & école & filière & niveau */}
+              {/* Étape 3 : Choix de la bourse */}
               {step === 3 && (
                 <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-xl font-semibold text-green-700 mb-4">Choix de la bourse, de l'école, de la filière, du niveau et du type</h3>
-                  {/* Sélection de la bourse si non pré-sélectionnée */}
-                  {!bourse && (
+                  <h3 className="text-xl font-semibold text-green-700 mb-6">3. Choix de la bourse</h3>
+
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Bourse *</Label>
-                      <Select onValueChange={async value => {
-                        const res = await fetch(`/api/bourses/${value}`);
-                        const data = await res.json();
-                        setBourse(data.bourse);
-                        setFormData({ ...formData, bourse_id: value, type_bourse: data.bourse.type || "locale" });
-                        setTypeBourse(data.bourse.type || "locale");
-                      }}>
+                      <Label>Type de bourse *</Label>
+                      <Select onValueChange={value => setFormData({ ...formData, type_bourse: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une bourse" />
+                          <SelectValue placeholder="Sélectionnez le type de bourse souhaité" />
                         </SelectTrigger>
                         <SelectContent>
-                          {bourses.map((b, idx) => (
-                            <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
+                          <SelectItem value="locale">Bourse locale</SelectItem>
+                          <SelectItem value="étrangère">Bourse étrangère</SelectItem>
+                          <SelectItem value="aide_scolaire">Aide scolaire</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.type_bourse && <p className="text-red-500 text-sm animate-pulse">{errors.type_bourse}</p>}
+                    </div>
+
+                    {formData.type_bourse === "étrangère" && (
+                      <div className="space-y-2">
+                        <Label>Pays souhaité *</Label>
+                        <Select onValueChange={value => setFormData({ ...formData, pays_souhaite: value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez le pays de destination" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="France">France</SelectItem>
+                            <SelectItem value="Maroc">Maroc</SelectItem>
+                            <SelectItem value="Tunisie">Tunisie</SelectItem>
+                            <SelectItem value="Sénégal">Sénégal</SelectItem>
+                            <SelectItem value="Côte d'Ivoire">Côte d'Ivoire</SelectItem>
+                            <SelectItem value="Cameroun">Cameroun</SelectItem>
+                            <SelectItem value="Autre">Autre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.pays_souhaite && <p className="text-red-500 text-sm animate-pulse">{errors.pays_souhaite}</p>}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Établissement demandé *</Label>
+                      <Select onValueChange={value => setFormData({ ...formData, etablissement: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez l'établissement souhaité" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getEtablissementsFiltered().map((etab, idx) => (
+                            <SelectItem key={idx} value={etab.nom}>
+                              {etab.nom} - {etab.localisation}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {errors.etablissement && <p className="text-red-500 text-sm animate-pulse">{errors.etablissement}</p>}
                     </div>
-                  )}
-                  {/* Type de bourse (affichage) */}
-                  {bourse && (
+
                     <div className="space-y-2">
-                      <Label>Type de bourse</Label>
-                      <Input value={bourse.type || typeBourse || "locale"} disabled />
+                      <Label>Filière souhaitée</Label>
+                      <Input 
+                        type="text" 
+                        placeholder="Ex: Génie Civil, Informatique, Médecine..."
+                        value={formData.filiere_souhaitee || ""}
+                        onChange={e => setFormData({ ...formData, filiere_souhaitee: e.target.value })} 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-4">
+                    <Button onClick={handleBack} variant="outline" className="flex-1">
+                      ← Retour
+                    </Button>
+                    <Button 
+                      onClick={handleNext} 
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3"
+                    >
+                      Continuer → Paiement
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Étape 4 : Paiement */}
+              {step === 4 && (
+                <div className="space-y-6 animate-fadeIn">
+                  <h3 className="text-xl font-semibold text-green-700 mb-6">4. Paiement des frais de dossier</h3>
+                  
+                  <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                    <h4 className="text-lg font-bold text-yellow-800 mb-2">Montant à régler</h4>
+                    <p className="text-2xl font-bold text-yellow-900">7 500 FCFA</p>
+                    <p className="text-sm text-yellow-700 mt-2">Frais de traitement du dossier de candidature</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Mode de paiement *</Label>
+                      <Select onValueChange={value => setFormData({ ...formData, mode_paiement: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisissez votre mode de paiement" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mobile_money">Mobile Money (MTN/Orange)</SelectItem>
+                          <SelectItem value="carte">Carte bancaire</SelectItem>
+                          <SelectItem value="depot_physique">Dépôt physique (Banque/Guichet)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.mode_paiement && <p className="text-red-500 text-sm animate-pulse">{errors.mode_paiement}</p>}
+                    </div>
+
+                    {formData.mode_paiement === "depot_physique" && (
+                      <div className="space-y-2">
+                        <Label>Preuve de paiement *</Label>
+                        <Input 
+                          type="file" 
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={e => handleFileUpload('preuve_paiement', e.target.files[0])}
+                        />
+                        <p className="text-xs text-gray-500">Reçu de versement ou bordereau de dépôt</p>
+                        {errors.preuve_paiement && <p className="text-red-500 text-sm animate-pulse">{errors.preuve_paiement}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <input 
+                        type="checkbox" 
+                        id="certification"
+                        checked={formData.certification || false}
+                        onChange={e => setFormData({ ...formData, certification: e.target.checked })}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="certification" className="text-sm cursor-pointer">
+                        Je certifie sur l'honneur que toutes les informations fournies dans ce formulaire sont exactes et complètes. 
+                        Je comprends que toute déclaration fausse ou omission pourra entraîner le rejet de ma candidature.
+                      </Label>
+                    </div>
+                    {errors.certification && <p className="text-red-500 text-sm animate-pulse mt-2">{errors.certification}</p>}
+                  </div>
+
+                  {errors.form && (
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <p className="text-red-700 text-sm">{errors.form}</p>
                     </div>
                   )}
-                  {/* École éligible */}
-                  <div className="space-y-2">
-                    <Label>École éligible *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, ecole: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez une école" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bourse?.ecoles_eligibles?.map((e, idx) => (
-                          <SelectItem key={idx} value={e}>{e}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Filière éligible */}
-                  <div className="space-y-2">
-                    <Label>Filière éligible *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, filiere: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez une filière" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bourse?.filieres_eligibles?.map((f, idx) => (
-                          <SelectItem key={idx} value={f}>{f}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Niveau */}
-                  <div className="space-y-2">
-                    <Label>Niveau *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, niveau: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un niveau" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {niveaux.map((niveau, idx) => (
-                          <SelectItem key={idx} value={niveau}>{niveau}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
-                </div>
-              )}
 
-              {/* Étape 4 : Pièces à fournir */}
-              {step === 4 && bourse && (
-                <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-xl font-semibold text-green-700 mb-4">Pièces à fournir</h3>
-                  <div className="space-y-4">
-                    {/* Générer dynamiquement les pièces à fournir selon la bourse (ou table pieces) */}
-                    {(bourse.pieces_a_fournir || []).map((piece, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <Label>{piece} *</Label>
-                        <Input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={e => {
-                            const file = e.target.files[0];
-                            if (file && file.size > 2 * 1024 * 1024) {
-                              setErrors({ ...errors, [`piece_${piece}`]: "Fichier trop volumineux (max 2Mo)" });
-                            } else {
-                              setFormData({ ...formData, [`piece_${piece}`]: file });
-                              setErrors({ ...errors, [`piece_${piece}`]: undefined });
-                            }
-                          }}
-                        />
-                        {errors[`piece_${piece}`] && <p className="text-red-500 text-sm animate-pulse">{errors[`piece_${piece}`]}</p>}
-                      </div>
-                    ))}
+                  <div className="flex space-x-4">
+                    <Button onClick={handleBack} variant="outline" className="flex-1">
+                      ← Retour
+                    </Button>
+                    <Button 
+                      onClick={handleFinalSubmit}
+                      disabled={isSubmitting || !formData.certification}
+                      className="flex-1 bg-gradient-to-r from-yellow-400 to-green-600 hover:from-yellow-500 hover:to-green-700 text-white font-semibold py-3"
+                    >
+                      {isSubmitting ? "Traitement en cours..." : 
+                       formData.mode_paiement === "depot_physique" ? "Soumettre la candidature" : 
+                       "Procéder au paiement"}
+                    </Button>
                   </div>
-                  <Button onClick={handleNext} className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6">Continuer →</Button>
-                </div>
-              )}
 
-              {/* Étape 5 : Paiement */}
-              {step === 5 && bourse && (
-                <div className="space-y-6 animate-fadeIn">
-                  <h3 className="text-xl font-semibold text-green-700 mb-4">Paiement des frais de dossier</h3>
-                  <div className="mb-4 text-lg font-bold text-green-700">Montant à régler : {bourse.frais_dossier ? bourse.frais_dossier + ' FCFA' : 'Inclus'}</div>
-                  <div className="space-y-4">
-                    <Label>Mode de paiement *</Label>
-                    <Select onValueChange={value => setFormData({ ...formData, paiement_mode: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choisissez un mode de paiement" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mobile_money">Mobile Money (MTN/Orange)</SelectItem>
-                        <SelectItem value="stripe">Carte bancaire (Stripe)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {errors.paiement && <div className="text-red-500 text-center mt-2 animate-pulse">{errors.paiement}</div>}
-                  <Button
-                    onClick={handleFinalSubmit}
-                    disabled={isSubmitting || !formData.paiement_mode}
-                    className="w-full bg-gradient-to-r from-yellow-400 to-green-600 hover:from-yellow-500 hover:to-green-700 text-white font-semibold py-3 mt-4"
-                  >
-                    {isSubmitting ? "Redirection..." : "Payer en ligne"}
-                  </Button>
-                  <div className="text-sm text-zinc-500 mt-2">
-                    Paiement en ligne sécurisé (Mobile Money, carte bancaire). Confirmation automatique après validation.
+                  <div className="text-center text-sm text-gray-600 mt-4">
+                    {formData.mode_paiement === "mobile_money" && (
+                      <p>Vous serez redirigé vers votre plateforme de paiement mobile</p>
+                    )}
+                    {formData.mode_paiement === "carte" && (
+                      <p>Paiement sécurisé par carte bancaire</p>
+                    )}
+                    {formData.mode_paiement === "depot_physique" && (
+                      <p>Votre dossier sera traité après vérification du paiement</p>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {step > 1 && step <= 5 && (
-                <Button onClick={handleBack} variant="outline" className="mt-6">← Retour</Button>
               )}
             </CardContent>
           </Card>

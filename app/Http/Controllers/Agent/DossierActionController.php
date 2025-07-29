@@ -6,77 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Dossier;
 use App\Models\User;
 use App\Models\Ecole;
-use App\Notifications\NouvelleCandidatureNotification;
+use Illuminate\Http\Request;
 use App\Notifications\DossierValideNotification;
 use App\Notifications\DossierRejeteNotification;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
-class DossierController extends Controller
+class DossierActionController extends Controller
 {
-    use AuthorizesRequests;
-
-    public function index(Request $request)
-    {
-        $query = Dossier::query()->with('bourse');
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-        if ($request->filled('bourse_id')) {
-            $query->where('bourse_id', $request->bourse_id);
-        }
-
-        $dossiers = $query->latest()->paginate(10);
-        $bourses = \App\Models\Bourse::orderBy('nom')->get(['id', 'nom']);
-
-        \App\Services\ActivityLogger::log(
-            'view_dossier_list',
-            Dossier::class,
-            null,
-            'Consultation de la liste des dossiers par un agent'
-        );
-
-        return Inertia::render('Agent/DossierList', [
-            'dossiers' => $dossiers,
-            'bourses' => $bourses,
-            'filters' => [
-                'statut' => $request->statut,
-                'bourse_id' => $request->bourse_id,
-            ],
-        ]);
-    }
-
-    public function show($id)
-    {
-        $dossier = Dossier::findOrFail($id);
-        $this->authorize('view', $dossier);
-
-        $ecoles = Ecole::all()->map(function ($ecole) {
-            $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
-            return $ecole;
-        });
-
-        \App\Services\ActivityLogger::log(
-            'view_dossier_details',
-            Dossier::class,
-            $dossier->id,
-            "Consultation du dossier #{$dossier->id} ({$dossier->nom}) par un agent"
-        );
-
-        return Inertia::render('Agent/DossierDetails', [
-            'dossier' => $dossier,
-            'ecoles' => $ecoles,
-        ]);
-    }
-
     public function valider($id)
     {
         $dossier = Dossier::findOrFail($id);
         $dossier->statut = 'validé';
         $dossier->save();
 
-        // Notification étudiant
         $user = User::where('email', $dossier->email)->first();
         if ($user) {
             $user->notify(new DossierValideNotification(
@@ -93,7 +34,6 @@ class DossierController extends Controller
             }
         }
 
-        // Notification admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
             $admin->notify(new DossierValideNotification(
@@ -120,13 +60,11 @@ class DossierController extends Controller
 
         $motif = $request->motif ?? null;
 
-        // Notification étudiant
         $user = User::where('email', $dossier->email)->first();
         if ($user) {
             $user->notify(new DossierRejeteNotification($motif));
         }
 
-        // Notification admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
             $admin->notify(new DossierRejeteNotification($motif));
@@ -156,7 +94,6 @@ class DossierController extends Controller
         $dossier->statut = 'accepté';
         $dossier->save();
 
-        // Notifications
         $user = User::where('email', $dossier->email)->first();
         if ($user) {
             $user->notify(new DossierValideNotification($ecole->nom, $request->filiere));
@@ -175,11 +112,5 @@ class DossierController extends Controller
         );
 
         return back()->with('success', 'Dossier affecté à l\'école et notification envoyée.');
-    }
-
-    public function apiList()
-    {
-        $dossiers = Dossier::with(['bourse', 'user'])->latest()->paginate(20);
-        return response()->json(['dossiers' => $dossiers]);
     }
 }
