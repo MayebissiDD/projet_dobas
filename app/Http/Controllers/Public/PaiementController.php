@@ -3,115 +3,287 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Dossier;
+use App\Models\Transaction;
 use App\Services\LygosService;
-use App\Models\Paiement;
-use App\Notifications\CandidatureSoumiseNotification;
-use App\Notifications\NouvelleCandidatureNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Services\StripeService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class PaiementController extends Controller
 {
-    protected $lygos;
+    protected $lygosService;
+    protected $stripeService;
 
-    public function __construct(LygosService $lygos)
+    public function __construct(LygosService $lygosService, StripeService $stripeService)
     {
-        $this->lygos = $lygos;
+        $this->lygosService = $lygosService;
+        $this->stripeService = $stripeService;
     }
 
     /**
-     * Traite le paiement Lygos depuis le formulaire public (Postuler).
+     * Initier un paiement en ligne
      */
-    public function pay(Request $request)
+    public function initiate(Request $request)
     {
         $request->validate([
-            'fullName' => 'required|string|max:255',
-            'email' => 'required|email',
-            'telephone' => 'required|string|max:20',
-            'type_bourse' => 'required|string',
+            'dossier_id' => 'required|exists:dossiers,id',
             'montant' => 'required|numeric|min:1',
-            'mode' => 'required|string',
+            'mode' => 'required|in:mobile_money,carte',
+            'fullName' => 'required|string',
+            'email' => 'required|email',
+            'telephone' => 'required|string'
         ]);
 
-        // Appel à l'API Lygos ou Stripe selon le mode
-        if ($request->mode === 'mobile_money') {
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'api-key' => $this->lygos->getApiKey(),
-                'Content-Type' => 'application/json',
-            ])->post($this->lygos->getApiUrl() . 'gateway', [
-                'message' => '',
-                'success_url' => url('/paiement/success'),  // URL callback succès paiement
-                'failure_url' => url('/paiement/failure'),  // URL callback échec paiement
-                'amount' => $request->montant,
-                'shop_name' => env('APP_NAME', 'DOBAS'),
+        try {
+            DB::beginTransaction();
+
+            $dossier = Dossier::findOrFail($request->dossier_id);
+
+            // Créer une transaction
+            $transaction = Transaction::create([
+                'dossier_id' => $dossier->id,
+                'montant' => $request->montant,
+                'mode_paiement' => $request->mode,
+                'statut' => 'en_attente',
+                'reference' => 'TXN-' . time() . '-' . $dossier->id,
+                'email' => $request->email,
+                'telephone' => $request->telephone,
+                'nom_payeur' => $request->fullName
             ]);
 
-            if ($response->successful() && isset($response['link'])) {
-                return response()->json([
-                    'success' => true,
-                    'link' => $response['link'],
-                ]);
-            }
-        } else if ($request->mode === 'stripe') {
-            // TODO: Intégration Stripe (à compléter selon vos clés Stripe)
+            // Traitement selon le mode de paiement
+            $response = $request->mode === 'mobile_money'
+                ? $this->initiateMobileMoney($transaction, $request)
+                : $this->initiateCardPayment($transaction, $request);
+
+            DB::commit();
+
+            // ✅ Retour clair au frontend
+            return response()->json([
+                'success' => true,
+                'link' => $response['payment_url']
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur initiation paiement', [
+                'error' => $e->getMessage(),
+                'dossier_id' => $request->dossier_id
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Paiement Stripe non encore disponible.',
-            ], 501);
+                'message' => 'Erreur lors de l\'initiation du paiement'
+            ], 500);
+        }
+    }
+
+    /**
+     * Initier paiement Mobile Money via Lygos
+     */
+    private function initiateMobileMoney($transaction, $request)
+    {
+        try {
+            $response = $this->lygosService->createPayment([
+                'amount' => $transaction->montant,
+                'phone' => $request->telephone,
+                'email' => $request->email,
+                'fullName' => $request->fullName,
+                'reference' => $transaction->reference,
+                'callback_url' => route('paiement.lygos.callback'),
+                'return_url' => route('candidature.payment.success')
+            ]);
+
+            if (!empty($response['success']) && $response['success']) {
+                $transaction->update([
+                    'transaction_externe_id' => $response['transaction_id'] ?? null,
+                    'statut' => 'en_cours'
+                ]);
+
+                return [
+                    'success' => true,
+                    'payment_url' => $response['payment_url']
+                ];
+            }
+
+            throw new \Exception($response['message'] ?? 'Erreur Lygos');
+
+        } catch (\Exception $e) {
+            $transaction->update(['statut' => 'echec']);
+            throw $e;
+        }
+    }
+
+    /**
+     * Initier paiement par carte via Stripe
+     */
+    private function initiateCardPayment($transaction, $request)
+    {
+        try {
+            $response = $this->stripeService->createPaymentIntent([
+                'amount' => $transaction->montant * 100, // en centimes
+                'currency' => 'xaf',
+                'receipt_email' => $request->email,
+                'metadata' => [
+                    'dossier_id' => $transaction->dossier_id,
+                    'transaction_id' => $transaction->id,
+                    'reference' => $transaction->reference
+                ]
+            ]);
+
+            if (!empty($response['success']) && $response['success']) {
+                $transaction->update([
+                    'transaction_externe_id' => $response['payment_intent_id'],
+                    'statut' => 'en_cours'
+                ]);
+
+                return [
+                    'success' => true,
+                    'payment_url' => $response['checkout_url']
+                ];
+            }
+
+            throw new \Exception($response['message'] ?? 'Erreur Stripe');
+
+        } catch (\Exception $e) {
+            $transaction->update(['statut' => 'echec']);
+            throw $e;
+        }
+    }
+
+    /**
+     * Webhook Lygos
+     */
+    public function handleLygosCallback(Request $request)
+    {
+        try {
+            if (!$this->lygosService->verifyWebhookSignature($request)) {
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+
+            $transaction = Transaction::where('transaction_externe_id', $request->input('transaction_id'))->first();
+
+            if (!$transaction) {
+                Log::warning('Transaction introuvable pour Lygos callback', [
+                    'transaction_id' => $request->input('transaction_id')
+                ]);
+                return response()->json(['error' => 'Transaction not found'], 404);
+            }
+
+            if ($request->input('status') === 'success') {
+                $this->markPaymentAsSuccessful($transaction);
+            } else {
+                $transaction->update([
+                    'statut' => 'echec',
+                    'message_erreur' => $request->input('message', 'Paiement échoué')
+                ]);
+            }
+
+            return response()->json(['success' => true]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur callback Lygos', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
+            ]);
+
+            return response()->json(['error' => 'Internal error'], 500);
+        }
+    }
+
+    /**
+     * Webhook Stripe
+     */
+    public function handleStripeCallback(Request $request)
+    {
+        try {
+            if (!$this->stripeService->verifyWebhookSignature($request)) {
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+
+            if ($request->input('type') === 'payment_intent.succeeded') {
+                $transaction = Transaction::where('transaction_externe_id', $request->input('data.object.id'))->first();
+                if ($transaction) {
+                    $this->markPaymentAsSuccessful($transaction);
+                }
+            }
+
+            return response()->json(['success' => true]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur callback Stripe', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
+            ]);
+
+            return response()->json(['error' => 'Internal error'], 500);
+        }
+    }
+
+    /**
+     * Marquer un paiement comme réussi
+     */
+    private function markPaymentAsSuccessful($transaction)
+    {
+        DB::beginTransaction();
+
+        try {
+            $transaction->update([
+                'statut' => 'reussi',
+                'date_paiement' => now()
+            ]);
+
+            $candidatureController = new CandidatureController();
+            $candidatureController->handlePaymentSuccess(new Request([
+                'dossier_id' => $transaction->dossier_id,
+                'transaction_id' => $transaction->id
+            ]));
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur finalisation paiement', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Vérifier le statut d'un paiement
+     */
+    public function checkStatus($transactionId)
+    {
+        $transaction = Transaction::find($transactionId);
+
+        if (!$transaction) {
+            return response()->json(['error' => 'Transaction not found'], 404);
         }
 
         return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de la création du paiement.',
-        ], 500);
+            'status' => $transaction->statut,
+            'message' => $transaction->message_erreur,
+            'date_paiement' => $transaction->date_paiement
+        ]);
     }
 
     /**
-     * Callback appelé après paiement réussi.
-     * Met à jour le paiement et valide la dossier associée.
+     * Page de succès
      */
     public function success(Request $request)
     {
-        $reference = $request->query('reference');
-        if (!$reference) {
-            return redirect('/postuler?error=missing_reference');
-        }
-        $paiement = \App\Models\Paiement::where('reference', $reference)->first();
-        if (!$paiement) {
-            return redirect('/postuler?error=paiement_non_trouve');
-        }
-        // Mise à jour du paiement
-        $paiement->update([
-            'statut' => 'payé',
-        ]);
-        // Validation du dossier associé
-        $dossier = \App\Models\Dossier::find($paiement->dossier_id);
-        if ($dossier) {
-            $dossier->statut = 'soumis';
-            $dossier->save();
-            // Notifier l'étudiant
-            $user = \App\Models\User::where('email', $dossier->email)->first();
-            if ($user) {
-                $user->notify(new \App\Notifications\CandidatureSoumiseNotification($dossier));
-            }
-        }
-        // Notifier admins/agents
-        $admins = \App\Models\User::role('admin')->get();
-        foreach ($admins as $admin) {
-            $admin->notify(new \App\Notifications\PaiementRecuNotification());
-        }
-        $agents = \App\Models\User::role('agent')->get();
-        foreach ($agents as $agent) {
-            $agent->notify(new \App\Notifications\PaiementRecuNotification());
-        }
-        return redirect('/postuler?success=1');
+        return redirect()->route('candidature.confirmation', ['success' => 1]);
     }
 
     /**
-     * Page callback en cas d'échec paiement.
+     * Page d’échec
      */
-    public function failure()
+    public function failure(Request $request)
     {
-        return redirect('/postuler?error=payment_failed')->with('error', 'Le paiement a échoué. Veuillez réessayer.');
+        return redirect()->route('candidature.index')->with('error', 'Paiement échoué. Veuillez réessayer.');
     }
 }

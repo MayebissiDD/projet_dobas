@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 
 // Public controllers
 use App\Http\Controllers\Public\ContactController;
+use App\Http\Controllers\Public\PostulerController;
 use App\Http\Controllers\Public\PaiementController as PublicPaiementController;
 use App\Http\Controllers\Public\DossierControllerEt as PublicDossierController;
 
@@ -23,6 +24,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\StatsController;
 use App\Http\Controllers\Admin\EcoleController;
 use App\Http\Controllers\Admin\BourseController;
+use App\Http\Controllers\Admin\DossierController as AdminDossierController;
 use App\Http\Controllers\Admin\PaiementController as AdminPaiementController;
 use App\Http\Controllers\Admin\ActivityLogController;
 
@@ -47,10 +49,42 @@ Route::get('/bourses', [BourseController::class, 'publicList'])->name('public.bo
 Route::get('/postuler', fn() => Inertia::render('Public/Postuler'))->name('postuler');
 Route::get('/contact', fn() => Inertia::render('Public/Contact'))->name('contact');
 Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
-Route::post('/paiement/public', [PublicPaiementController::class, 'pay'])->name('public.paiement');
 
+// ===========================
+// ROUTES PUBLIQUES - CANDIDATURE/POSTULER
+// ===========================
+Route::prefix('candidature')->name('candidature.')->group(function() {
+    Route::get('/', [PostulerController::class, 'index'])->name('index');
+    Route::post('/save-step', [PostulerController::class, 'saveStep'])->name('save-step');
+    Route::post('/submit', [PostulerController::class, 'submitComplete'])->name('submit');
+    Route::post('/upload', [PostulerController::class, 'uploadFile'])->name('upload');
+    Route::get('/confirmation', [PostulerController::class, 'confirmation'])->name('confirmation');
+    Route::post('/payment-success', [PostulerController::class, 'handlePaymentSuccess'])->name('payment.success');
+});
+
+// Routes API pour le frontend (utilisées par Postuler.jsx)
+Route::post('/api/dossiers/public', [PostulerController::class, 'submitComplete'])->name('public.dossiers.store');
+
+// ===========================
+// ROUTES PAIEMENT PUBLIQUES
+// ===========================
+Route::prefix('paiement')->name('paiement.')->group(function() {
+    // Route utilisée par Postuler.jsx
+    Route::post('/public', [PublicPaiementController::class, 'initiate'])->name('public.pay');
+    
+    // Routes de gestion des paiements
+    Route::post('/initiate', [PublicPaiementController::class, 'initiate'])->name('initiate');
+    Route::get('/status/{transactionId}', [PublicPaiementController::class, 'checkStatus'])->name('status');
+    Route::get('/success', [PublicPaiementController::class, 'success'])->name('success');
+    Route::get('/failure', [PublicPaiementController::class, 'failure'])->name('failure');
+    
+    // Webhooks (sans middleware CSRF)
+    Route::post('/lygos/callback', [PublicPaiementController::class, 'handleLygosCallback'])->name('lygos.callback');
+    Route::post('/stripe/callback', [PublicPaiementController::class, 'handleStripeCallback'])->name('stripe.callback');
+});
+
+// Routes API existantes
 Route::get('/api/bourses/{id}', [BourseController::class, 'apiShow']);
-Route::post('/api/dossiers/public', [PublicDossierController::class, 'store'])->name('public.dossiers.store');
 
 // --------------------
 // AUTHENTIFICATION & PROFIL
@@ -150,10 +184,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/utilisateurs', [UserController::class, 'index'])->name('utilisateurs');
     Route::post('/utilisateurs/{user}/role', [UserController::class, 'assignRole'])->name('utilisateurs.assignRole');
 
-    // Dossiers
-    Route::get('/dossiers', fn() => Inertia::render('Admin/Dossiers'))->name('dossiers');
-    Route::get('/dossiers/{id}', [AgentDossierActionController::class, 'show'])->name('dossiers.show');
-    Route::get('/dossiers/{id}/edit', [AgentDossierActionController::class, 'edit'])->name('dossiers.edit');
+    // ===========================
+    // DOSSIERS - Version étendue
+    // ===========================
+    Route::resource('dossiers', AdminDossierController::class)->only(['index', 'show']);
+    Route::get('/dossiers/{id}/edit', [AdminDossierController::class, 'edit'])->name('dossiers.edit');
+    Route::post('/dossiers/{dossier}/status', [AdminDossierController::class, 'updateStatus'])->name('dossiers.update-status');
+    Route::post('/dossiers/{dossier}/comment', [AdminDossierController::class, 'addComment'])->name('dossiers.add-comment');
+    Route::post('/dossiers/{dossier}/notify', [AdminDossierController::class, 'sendNotification'])->name('dossiers.send-notification');
+    
+    // Téléchargements
+    Route::get('/dossiers/{dossier}/pieces/{piece}/download', [AdminDossierController::class, 'downloadPiece'])->name('dossiers.download-piece');
+    Route::get('/dossiers/{dossier}/download-all', [AdminDossierController::class, 'downloadAllPieces'])->name('dossiers.download-all');
 
     // Bourses
     Route::resource('/bourses', BourseController::class)->except(['show']);
@@ -161,11 +203,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Écoles
     Route::resource('/ecoles', EcoleController::class)->except(['show']);
 
-    // Rapports
+    // ===========================
+    // RAPPORTS - Version étendue
+    // ===========================
     Route::get('/rapports', fn() => Inertia::render('Admin/Rapports'))->name('rapports');
     Route::get('/rapports/logs', [ActivityLogController::class, 'index'])->name('rapports.logs');
     Route::get('/rapports/logs/csv', [ActivityLogController::class, 'exportCsv'])->name('rapports.logs.csv');
     Route::get('/rapports/logs/pdf', [ActivityLogController::class, 'exportPdf'])->name('rapports.logs.pdf');
+    Route::post('/generate-report', [AdminDossierController::class, 'generateReport'])->name('generate-report');
 
     // Notifications
     Route::get('/notifications', function () {
@@ -190,3 +235,20 @@ Route::get('/api/bourses', [BourseController::class, 'apiList']);
 Route::get('/api/ecoles', [EcoleController::class, 'apiList']);
 Route::get('/api/filieres', fn() => response()->json(['filieres' => \App\Models\Filiere::all()]));
 Route::get('/api/pieces', fn() => response()->json(['pieces' => \App\Models\Piece::all()]));
+
+// ===========================
+// API POUR DONNÉES DYNAMIQUES - Version étendue
+// ===========================
+Route::prefix('api')->group(function() {
+    Route::get('/bourses', function() {
+        return response()->json([
+            'bourses' => \App\Models\Bourse::active()->get()
+        ]);
+    });
+    
+    Route::get('/etablissements', function() {
+        return response()->json([
+            'etablissements' => \App\Models\Etablissement::active()->get()
+        ]);
+    });
+});
