@@ -9,6 +9,23 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
+
+    public function store(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'Identifiants invalides.'])->withInput();
+        }
+
+        $request->session()->regenerate();
+
+        return redirect()->intended('/dashboard'); // ou une autre route
+    }
+
     /**
      * Affiche le formulaire de connexion (vue React via Inertia).
      */
@@ -25,7 +42,7 @@ class LoginController extends Controller
         $credentials = $request->only('email', 'password');
 
         // Tentative d'authentification pour les agents/admins (guard 'web')
-        if (Auth::guard('web')->attempt($credentials)) {
+        if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::guard('web')->user();

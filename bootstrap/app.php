@@ -3,8 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\RoleMiddleware;
-
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,17 +11,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Middlewares globaux pour le web
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-         $middleware->alias([
+        // Aliases clairs et sans duplication
+        $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'auth.any' => \App\Http\Middleware\AuthenticateAny::class,
+            'guest.redirect' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
-
-        //
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->create();

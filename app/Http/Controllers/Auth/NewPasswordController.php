@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -10,6 +11,9 @@ use Inertia\Inertia;
 
 class NewPasswordController extends Controller
 {
+    /**
+     * Affiche le formulaire de réinitialisation.
+     */
     public function create(Request $request)
     {
         return Inertia::render('Auth/ResetPassword', [
@@ -18,6 +22,9 @@ class NewPasswordController extends Controller
         ]);
     }
 
+    /**
+     * Applique la réinitialisation de mot de passe.
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -26,7 +33,9 @@ class NewPasswordController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        $status = Password::reset(
+        $broker = $this->getPasswordBroker($request->email);
+
+        $status = Password::broker($broker)->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
@@ -37,10 +46,21 @@ class NewPasswordController extends Controller
         );
 
         if ($status == Password::PASSWORD_RESET) {
-            // ✅ Rediriger vers la page de connexion avec un message
             return redirect()->route('login')->with('status', __($status));
         }
 
         return back()->withErrors(['email' => [__($status)]]);
+    }
+
+    /**
+     * Détection du broker selon le type d'utilisateur.
+     */
+    private function getPasswordBroker(string $email): string
+    {
+        if (\App\Models\Etudiant::where('email', $email)->exists()) {
+            return 'etudiants';
+        }
+
+        return 'users';
     }
 }
