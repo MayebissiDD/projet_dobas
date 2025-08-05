@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Request; // Ajout de cet import
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -38,35 +38,41 @@ class LygosService
             ]);
 
             if (!$response->successful()) {
-                throw new \Exception('Erreur lors de la communication avec Lygos: ' . $response->body());
+                Log::error('Erreur communication Lygos: ' . $response->body());
+                throw new \Exception('Erreur lors de la communication avec Lygos.');
             }
 
             $json = $response->json();
             Log::debug('Réponse Lygos', $json);
 
-            if (!isset($json['success']) || !$json['success']) {
-                throw new \Exception($json['message'] ?? 'Erreur Lygos');
+            // Vérifie la présence du lien
+            if (!isset($json['link']) || empty($json['link'])) {
+                Log::error('Erreur initiation paiement', ['error' => $json['message'] ?? 'Pas de lien de paiement', 'dossier_id' => $data['reference'] ?? null]);
+                throw new \Exception($json['message'] ?? 'Lien de paiement non fourni par Lygos');
             }
 
-            return [
+            // Construction réponse standardisée
+            $final = [
                 'success' => true,
-                'payment_url' => $json['data']['payment_url'] ?? null,
-                'transaction_id' => $json['data']['transaction_id'] ?? null,
+                'payment_url' => $json['link'],
+                'transaction_id' => $json['id'] ?? null,
             ];
+
+            Log::info('Réponse de Lygos', $final);
+            return $final;
+
         } catch (\Exception $e) {
             Log::error('Erreur Lygos Service: ' . $e->getMessage());
             throw $e;
         }
     }
 
-
     /**
      * Vérifie la signature du webhook
      */
     public function verifyWebhookSignature(Request $request)
     {
-        // Implémentez la vérification de signature selon la documentation de Lygos
-        // Pour l'instante, nous retournons true
+        // À implémenter selon la documentation Lygos
         return true;
     }
 
