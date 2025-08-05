@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -21,12 +20,28 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $user = Auth::guard('web')->user() ?? Auth::guard('etudiant')->user();
-
+        // Récupérer l'utilisateur connecté selon le guard actif
+        $user = null;
+        $guard = null;
+        
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            $guard = 'web';
+        } elseif (Auth::guard('etudiant')->check()) {
+            $user = Auth::guard('etudiant')->user();
+            $guard = 'etudiant';
+        }
+        
         if (!$user) {
             return back()->withErrors(['current_password' => 'Utilisateur non authentifié.']);
         }
 
+        // Vérifier le mot de passe actuel
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return back()->withErrors(['current_password' => 'Le mot de passe actuel est incorrect.']);
+        }
+
+        // Mettre à jour le mot de passe
         $user->update([
             'password' => Hash::make($validated['password']),
         ]);

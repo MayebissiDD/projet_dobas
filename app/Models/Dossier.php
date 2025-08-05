@@ -11,35 +11,44 @@ class Dossier extends Model
     protected $fillable = [
         'etudiant_id',
         'bourse_id',
-        'ecole_id',        // Nouveau
-        'filiere_id',      // Nouveau
-        'nom',
-        'prenom',
+        'ecole_id',
+        'filiere_id',
+        'statut',
+        'statut_paiement',
+        'date_soumission',
+        'date_decision',
+        'agent_id',
+        'commentaire_agent',
+        'raison_refus',
+        'numero_dossier',
+        'type_bourse',
+        'etablissement',
+        'pays_souhaite',
+        'filiere_souhaitee',
+        'mode_paiement',
+        'cas_social',
+        'moyenne',
+        'niveau_etude',
         'date_naissance',
         'lieu_naissance',
+        'sexe',
         'adresse',
+        'nom',
         'email',
         'telephone',
-        'diplome',
-        'annee_diplome',
-        'paiement_mode',
-        'statut',
-        'niveau',
-        'diplomes',
-        'uploads',
-        'date_soumission',
-        'commentaire',
+        'photo_identite',
     ];
 
     protected $casts = [
-        'diplomes' => 'array',
-        'uploads' => 'array',
         'date_soumission' => 'datetime',
+        'date_decision' => 'date',
+        'date_naissance' => 'date',
+        'cas_social' => 'boolean',
     ];
 
     public function etudiant(): BelongsTo
     {
-        return $this->belongsTo(Etudiant::class, 'etudiant_id');
+        return $this->belongsTo(Etudiant::class);
     }
 
     public function bourse(): BelongsTo
@@ -47,23 +56,42 @@ class Dossier extends Model
         return $this->belongsTo(Bourse::class);
     }
 
+    public function ecole(): BelongsTo
+    {
+        return $this->belongsTo(Ecole::class);
+    }
+
+    public function filiere(): BelongsTo
+    {
+        return $this->belongsTo(Filiere::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'agent_id');
+    }
+
+    public function pieces(): HasMany
+    {
+        return $this->hasMany(DossierPiece::class);
+    }
+    // Dans le modèle Dossier
+    public function getPhotoUrlAttribute()
+    {
+        return $this->photo_identite ? asset('storage/' . $this->photo_identite) : null;
+    }
     public function paiements(): HasMany
     {
         return $this->hasMany(Paiement::class);
     }
 
-    public function pieces(): HasMany
+    public function historique(): HasMany
     {
-        return $this->hasMany(DossierPiece::class, 'dossier_id');
+        return $this->hasMany(HistoriqueStatutDossier::class);
     }
 
-    public function ecole(): BelongsTo
+    public function commentaires(): HasMany
     {
-        return $this->belongsTo(Ecole::class, 'ecole_id');
-    }
-
-    public function filiere(): BelongsTo
-    {
-        return $this->belongsTo(Filiere::class, 'filiere_id');
+        return $this->hasMany(Commentaire::class);
     }
 }

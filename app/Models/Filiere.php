@@ -1,9 +1,10 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Filiere extends Model
 {
@@ -12,29 +13,30 @@ class Filiere extends Model
     protected $fillable = [
         'nom',
         'ecole_id',
+        'description',
+        'niveau',
+        'duree',
+        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+        'duree' => 'integer',
     ];
 
     /**
      * Relation : une filière appartient à une école.
      */
-    public function ecole()
+    public function ecole(): BelongsTo
     {
         return $this->belongsTo(Ecole::class);
     }
 
     /**
-     * Relation optionnelle : une filière peut avoir plusieurs candidatures.
-     * À activer si ta table `candidatures` contient `filiere_id`
+     * Relation : une filière peut avoir plusieurs dossiers.
      */
-    // public function candidatures()
-    // {
-    //     return $this->hasMany(Candidature::class);
-    // }
-
-    /**
-     * Casts automatiques (optionnel).
-     */
-    protected $casts = [
-        'ecole_id' => 'integer',
-    ];
+    public function dossiers(): HasMany
+    {
+        return $this->hasMany(Dossier::class);
+    }
 }

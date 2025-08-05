@@ -1,50 +1,47 @@
 <?php
-
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class DossierValideNotification extends Notification
+class DossierValideNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public $school;
-    public $filiere;
+    protected $ecole;
+    protected $filiere;
 
-    public function __construct($school, $filiere)
+    public function __construct($ecole, $filiere)
     {
-        $this->school = $school;
+        $this->ecole = $ecole;
         $this->filiere = $filiere;
     }
 
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
-        return ['mail', 'broadcast'];
+        return ['mail', 'database'];
     }
 
-    public function toMail(object $notifiable)
+    public function toMail($notifiable)
     {
-        return (new \Illuminate\Notifications\Messages\MailMessage)
-            ->line('Félicitations ! Votre dossier a été validé par un agent DOBAS.')
-            ->line('Vous avez été affecté à l\'école : ' . $this->school)
+        return (new MailMessage)
+            ->subject('Votre candidature a été validée - DOBAS')
+            ->greeting('Cher(e) ' . $notifiable->nom)
+            ->line('Nous avons le plaisir de vous informer que votre candidature a été validée.')
+            ->line('École : ' . $this->ecole)
             ->line('Filière : ' . $this->filiere)
-            ->action('Voir mon dossier', url('/etudiant/dossiers'))
-            ->line('Merci d’utiliser DOBAS !');
+            ->action('Consulter votre dossier', url('/etudiant/dossiers'))
+            ->line('Merci de faire confiance à DOBAS !');
     }
 
-    public function toBroadcast(object $notifiable): BroadcastMessage
-    {
-        return new BroadcastMessage([
-            'message' => 'Votre dossier a été validé et vous avez été affecté à ' . $this->school . ' en ' . $this->filiere . '.',
-        ]);
-    }
-
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            'message' => 'Votre dossier a été validé et vous avez été affecté à ' . $this->school . ' en ' . $this->filiere . '.',
+            'ecole' => $this->ecole,
+            'filiere' => $this->filiere,
+            'message' => 'Votre candidature a été validée',
         ];
     }
 }

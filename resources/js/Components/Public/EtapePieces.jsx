@@ -1,6 +1,6 @@
-// ========================================
-// COMPOSANT ÉTAPE 2 - EtapePieces.jsx
-// ========================================
+// Dans EtapePieces.jsx
+
+// Remplacez votre implémentation actuelle par celle-ci :
 
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ export default function EtapePieces({
   onNext, 
   onBack 
 }) {
-  
   // Validation des pièces justificatives
   const validatePieces = () => {
     const newErrors = {};
@@ -35,7 +34,7 @@ export default function EtapePieces({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  
   // Gestion des fichiers avec validation
   const handleFileUpload = (field, file) => {
     if (!file) return;
@@ -53,6 +52,7 @@ export default function EtapePieces({
       return;
     }
     
+    // Mettre à jour formData avec le fichier
     updateFormData({ [field]: file });
     
     // Supprimer l'erreur pour ce champ s'il y en avait une
@@ -60,14 +60,14 @@ export default function EtapePieces({
     delete newErrors[field];
     setErrors(newErrors);
   };
-
+  
   // Navigation vers l'étape suivante
   const handleNext = () => {
     if (validatePieces()) {
       onNext();
     }
   };
-
+  
   return (
     <div className="space-y-6 animate-fadeIn">
       <h3 className="text-xl font-semibold text-green-700 mb-6">2. Pièces justificatives</h3>
@@ -81,7 +81,7 @@ export default function EtapePieces({
           </p>
         </div>
       </div>
-
+      
       <div className="space-y-4">
         {/* Casier judiciaire */}
         <div className="space-y-2">
@@ -99,7 +99,7 @@ export default function EtapePieces({
             <p className="text-red-500 text-sm animate-pulse">{errors.casier_judiciaire}</p>
           )}
         </div>
-
+        
         {/* Certificat de nationalité */}
         <div className="space-y-2">
           <Label>Certificat de nationalité *</Label>
@@ -116,7 +116,7 @@ export default function EtapePieces({
             <p className="text-red-500 text-sm animate-pulse">{errors.certificat_nationalite}</p>
           )}
         </div>
-
+        
         {/* Attestation de réussite au BAC */}
         <div className="space-y-2">
           <Label>Attestation de réussite au BAC *</Label>
@@ -133,7 +133,7 @@ export default function EtapePieces({
             <p className="text-red-500 text-sm animate-pulse">{errors.attestation_bac}</p>
           )}
         </div>
-
+        
         {/* Certificat médical */}
         <div className="space-y-2">
           <Label>Certificat médical *</Label>
@@ -150,7 +150,7 @@ export default function EtapePieces({
             <p className="text-red-500 text-sm animate-pulse">{errors.certificat_medical}</p>
           )}
         </div>
-
+        
         {/* Acte de naissance */}
         <div className="space-y-2">
           <Label>Acte de naissance *</Label>
@@ -167,7 +167,7 @@ export default function EtapePieces({
             <p className="text-red-500 text-sm animate-pulse">{errors.acte_naissance}</p>
           )}
         </div>
-
+        
         {/* Passeport (conditionnel pour bourse étrangère) */}
         {formData.type_bourse === "étrangère" && (
           <div className="space-y-2">
@@ -187,7 +187,7 @@ export default function EtapePieces({
           </div>
         )}
       </div>
-
+      
       {/* Boutons de navigation */}
       <div className="flex space-x-4 mt-8">
         <Button 

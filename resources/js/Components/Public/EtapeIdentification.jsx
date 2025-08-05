@@ -9,18 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { villesCongo } from "@/utils/congoData";
 
-export default function EtapeIdentification({ 
-  formData, 
-  updateFormData, 
-  errors, 
-  setErrors, 
-  onNext 
+export default function EtapeIdentification({
+  formData,
+  updateFormData,
+  errors,
+  setErrors,
+  onNext
 }) {
-  
+
   // Validation de l'étape
   const validateStep = () => {
     const newErrors = {};
-    
+
     if (!formData.nom) newErrors.nom = "Nom complet requis";
     if (!formData.date_naissance) newErrors.date_naissance = "Date de naissance requise";
     if (!formData.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
@@ -31,26 +31,29 @@ export default function EtapeIdentification({
     if (!formData.niveau_etude) newErrors.niveau_etude = "Niveau d'étude requis";
     if (!formData.moyenne && !formData.cas_social) newErrors.moyenne = "Moyenne requise ou cochez 'cas social'";
     if (!formData.photo_identite) newErrors.photo_identite = "Photo d'identité requise";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Gestion des fichiers
+  // Dans EtapeIdentification.jsx, modifiez la fonction handleFileUpload
+
   const handleFileUpload = (field, file) => {
     if (!file) return;
-    
+
     if (file.size > 5 * 1024 * 1024) {
       setErrors({ ...errors, [field]: "Fichier trop volumineux (max 5Mo)" });
       return;
     }
-    
+
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       setErrors({ ...errors, [field]: "Format non supporté (JPG, PNG uniquement)" });
       return;
     }
-    
+
+    // Mettre à jour formData avec le fichier
     updateFormData({ [field]: file });
     setErrors({ ...errors, [field]: undefined });
   };
@@ -64,25 +67,25 @@ export default function EtapeIdentification({
   return (
     <div className="space-y-6 animate-fadeIn">
       <h3 className="text-xl font-semibold text-green-700 mb-6">1. Identification du candidat</h3>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label>Nom complet *</Label>
-          <Input 
-            type="text" 
+          <Input
+            type="text"
             placeholder="Ex: Jean MBEMBA"
             value={formData.nom || ""}
-            onChange={e => updateFormData({ nom: e.target.value })} 
+            onChange={e => updateFormData({ nom: e.target.value })}
           />
           {errors.nom && <p className="text-red-500 text-sm animate-pulse">{errors.nom}</p>}
         </div>
 
         <div className="space-y-2">
           <Label>Date de naissance *</Label>
-          <Input 
-            type="date" 
+          <Input
+            type="date"
             value={formData.date_naissance || ""}
-            onChange={e => updateFormData({ date_naissance: e.target.value })} 
+            onChange={e => updateFormData({ date_naissance: e.target.value })}
           />
           {errors.date_naissance && <p className="text-red-500 text-sm animate-pulse">{errors.date_naissance}</p>}
         </div>
@@ -109,22 +112,22 @@ export default function EtapeIdentification({
 
         <div className="space-y-2">
           <Label>Téléphone *</Label>
-          <Input 
-            type="tel" 
+          <Input
+            type="tel"
             placeholder="Ex: +242 06 123 45 67"
             value={formData.telephone || ""}
-            onChange={e => updateFormData({ telephone: e.target.value })} 
+            onChange={e => updateFormData({ telephone: e.target.value })}
           />
           {errors.telephone && <p className="text-red-500 text-sm animate-pulse">{errors.telephone}</p>}
         </div>
 
         <div className="space-y-2">
           <Label>Email *</Label>
-          <Input 
-            type="email" 
+          <Input
+            type="email"
             placeholder="Ex: jean.mbemba@email.com"
             value={formData.email || ""}
-            onChange={e => updateFormData({ email: e.target.value })} 
+            onChange={e => updateFormData({ email: e.target.value })}
           />
           {errors.email && <p className="text-red-500 text-sm animate-pulse">{errors.email}</p>}
         </div>
@@ -145,11 +148,11 @@ export default function EtapeIdentification({
 
         <div className="space-y-2">
           <Label>Adresse actuelle *</Label>
-          <Input 
-            type="text" 
+          <Input
+            type="text"
             placeholder="Ex: Quartier Mpila, Rue 123, Brazzaville"
             value={formData.adresse || ""}
-            onChange={e => updateFormData({ adresse: e.target.value })} 
+            onChange={e => updateFormData({ adresse: e.target.value })}
           />
           {errors.adresse && <p className="text-red-500 text-sm animate-pulse">{errors.adresse}</p>}
         </div>
@@ -172,23 +175,23 @@ export default function EtapeIdentification({
 
         <div className="space-y-2">
           <Label>Moyenne obtenue</Label>
-          <Input 
-            type="number" 
+          <Input
+            type="number"
             step="0.01"
             placeholder="Ex: 12.50"
             value={formData.moyenne || ""}
-            onChange={e => updateFormData({ moyenne: e.target.value, cas_social: false })} 
+            onChange={e => updateFormData({ moyenne: e.target.value, cas_social: false })}
             disabled={formData.cas_social}
           />
           <div className="flex items-center space-x-2 mt-2">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               id="cas_social"
               checked={formData.cas_social || false}
-              onChange={e => updateFormData({ 
+              onChange={e => updateFormData({
                 cas_social: e.target.checked,
                 moyenne: e.target.checked ? "" : formData.moyenne
-              })} 
+              })}
             />
             <Label htmlFor="cas_social" className="text-sm">Cas social (pas de moyenne)</Label>
           </div>
@@ -198,8 +201,8 @@ export default function EtapeIdentification({
 
       <div className="space-y-2">
         <Label>Photo d'identité *</Label>
-        <Input 
-          type="file" 
+        <Input
+          type="file"
           accept=".jpg,.jpeg,.png"
           onChange={e => handleFileUpload('photo_identite', e.target.files[0])}
         />
@@ -207,8 +210,8 @@ export default function EtapeIdentification({
         {errors.photo_identite && <p className="text-red-500 text-sm animate-pulse">{errors.photo_identite}</p>}
       </div>
 
-      <Button 
-        onClick={handleNext} 
+      <Button
+        onClick={handleNext}
         className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 mt-6"
       >
         Continuer → Pièces justificatives

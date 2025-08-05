@@ -47,23 +47,45 @@ export default function Postuler() {
           fetch('/api/bourses'),
           fetch('/api/etablissements')
         ]);
-        
+
         const boursesData = await boursesRes.json();
         const etablissementsData = await etablissementsRes.json();
-        
+
         setBourses(boursesData.bourses || []);
         setEtablissements(etablissementsData.etablissements || []);
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       }
     };
-    
+
     loadData();
   }, []);
 
-  // Sauvegarde progressive dans le localStorage
+  // Dans Postuler.jsx
+
+  // Sauvegarde progressive dans le localStorage (sans les fichiers)
   useEffect(() => {
-    localStorage.setItem('postulerFormData', JSON.stringify(formData));
+    // Créer une copie de formData sans les fichiers
+    const formDataToSave = { ...formData };
+
+    // Liste des champs qui sont des fichiers
+    const fileFields = [
+      'photo_identite',
+      'casier_judiciaire',
+      'certificat_nationalite',
+      'attestation_bac',
+      'certificat_medical',
+      'acte_naissance',
+      'passeport',
+      'preuve_paiement'
+    ];
+
+    // Supprimer les champs de type fichier de l'objet à sauvegarder
+    fileFields.forEach(field => {
+      delete formDataToSave[field];
+    });
+
+    localStorage.setItem('postulerFormData', JSON.stringify(formDataToSave));
   }, [formData]);
 
   // Restaurer les données au chargement
@@ -72,6 +94,7 @@ export default function Postuler() {
     if (saved) {
       const savedData = JSON.parse(saved);
       setFormData({ ...savedData, nationalite: "Congolaise" });
+      // Note: Les fichiers ne sont pas restaurés, l'utilisateur devra les sélectionner à nouveau
     }
   }, []);
 
@@ -90,56 +113,99 @@ export default function Postuler() {
     setStep(step - 1);
   };
 
-  // Soumission finale
+  // Dans Postuler.jsx, modifiez handleFinalSubmit
+
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     setErrors({});
 
+    // Vérifier que tous les fichiers requis sont présents
+    const requiredFiles = [
+      'photo_identite',
+      'casier_judiciaire',
+      'certificat_nationalite',
+      'attestation_bac',
+      'certificat_medical',
+      'acte_naissance'
+    ];
+
+    if (formData.type_bourse === 'étrangère') {
+      requiredFiles.push('passeport');
+    }
+
+    if (formData.mode_paiement === 'depot_physique') {
+      requiredFiles.push('preuve_paiement');
+    }
+
+    const missingFiles = requiredFiles.filter(field => !formData[field]);
+    if (missingFiles.length > 0) {
+      setErrors({
+        form: `Veuillez télécharger les fichiers suivants: ${missingFiles.join(', ')}`
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Debug: Afficher les données avant envoi
+    console.log("Données du formulaire avant envoi:", formData);
+    console.log("Pays souhaité:", formData.pays_souhaite);
+    console.log("Type de bourse:", formData.type_bourse);
+    console.log("Cas social:", formData.cas_social);
+    console.log("Moyenne:", formData.moyenne);
+
     try {
       const formDataToSend = new FormData();
-      
+
       Object.entries(formData).forEach(([key, value]) => {
         if (value instanceof File) {
           formDataToSend.append(key, value);
-        } else {
-          formDataToSend.append(key, value ?? "");
+        } else if (key === "cas_social") {
+          formDataToSend.append(key, value ? 1 : 0); // 👈 transforme en 1 ou 0
+        } else if (value !== null && value !== undefined && value !== "") {
+          formDataToSend.append(key, value);
         }
       });
 
-      const response = await fetch("/api/dossiers/public", {
+      const response = await fetch("/candidature/submit", {
         method: "POST",
         body: formDataToSend,
+        headers: {
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
       });
 
       const data = await response.json();
-      paiementData.append("dossier_id", data.dossier_id);
+      console.log("Réponse du serveur:", data);
 
-      
       if (data.success) {
-        if (formData.mode_paiement === "mobile_money" || formData.mode_paiement === "carte") {
-          const paiementData = new FormData();
-          paiementData.append("fullName", formData.nom);
-          paiementData.append("email", formData.email);
-          paiementData.append("telephone", formData.telephone);
-          paiementData.append("montant", "7500");
-          paiementData.append("mode", formData.mode_paiement);
-          
-          const paiementResponse = await fetch("/paiement/public", {
-            method: "POST",
-            body: paiementData,
-          });
-          
-          const paiementResult = await paiementResponse.json();
-          if (paiementResult.success && paiementResult.link) {
-            window.location.href = paiementResult.link;
+        // Préparer les données de paiement après avoir reçu le dossier_id
+        const paiementData = new FormData();
+        paiementData.append("dossier_id", data.dossier_id);
+        paiementData.append("fullName", formData.nom);
+        paiementData.append("email", formData.email);
+        paiementData.append("telephone", formData.telephone);
+        paiementData.append("montant", "7500");
+        paiementData.append("mode", formData.mode_paiement);
+
+        const paiementResponse = await fetch("/paiement/initiate", {
+          method: "POST",
+          body: paiementData,
+          headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
           }
+        });
+
+        const paiementResult = await paiementResponse.json();
+        if (paiementResult.success && paiementResult.link) {
+          window.location.href = paiementResult.link;
         } else {
-          setpaiementSuccess(true);
+          setErrors({ form: "Erreur lors de l'initialisation du paiement" });
         }
       } else {
         setErrors(data.errors || { form: "Erreur lors de la soumission" });
       }
     } catch (error) {
+      console.error("Erreur lors de la soumission:", error);
       setErrors({ form: "Erreur réseau. Veuillez réessayer." });
     } finally {
       setIsSubmitting(false);
@@ -172,7 +238,7 @@ export default function Postuler() {
       onBack: handleBack
     };
 
-    switch(step) {
+    switch (step) {
       case 1:
         return <EtapeIdentification {...commonProps} />;
       case 2:
@@ -195,16 +261,15 @@ export default function Postuler() {
               <CardTitle className="text-2xl text-center font-bold">
                 Formulaire de Candidature - DOBAS
               </CardTitle>
-              
+
               {/* Stepper */}
               <div className="flex justify-between items-center mt-6 mb-4">
                 {["Identification", "Pièces", "Bourse", "Paiement"].map((label, idx) => (
                   <div key={idx} className="flex flex-col items-center">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
-                      step > idx + 1 ? 'bg-white text-green-600' : 
-                      step === idx + 1 ? 'bg-green-600 text-white scale-110 animate-pulse' : 
-                      'bg-white/30 text-white/60'
-                    }`}>
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full ${step > idx + 1 ? 'bg-white text-green-600' :
+                      step === idx + 1 ? 'bg-green-600 text-white scale-110 animate-pulse' :
+                        'bg-white/30 text-white/60'
+                      }`}>
                       {step > idx + 1 ? <CheckCircle className="h-6 w-6" /> : idx + 1}
                     </div>
                     <span className={`text-sm mt-2 font-medium ${step >= idx + 1 ? 'text-white' : 'text-white/60'}`}>
@@ -213,12 +278,12 @@ export default function Postuler() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Progress Bar */}
               <div className="relative">
                 <Progress value={(step / 4) * 100} className="h-3 bg-white/20" />
-                <div 
-                  className="absolute top-0 left-0 h-3 bg-gradient-to-r from-white via-white/80 to-white/60 rounded-full transition-all duration-700 ease-out" 
+                <div
+                  className="absolute top-0 left-0 h-3 bg-gradient-to-r from-white via-white/80 to-white/60 rounded-full transition-all duration-700 ease-out"
                   style={{ width: `${(step / 4) * 100}%` }}
                 ></div>
               </div>

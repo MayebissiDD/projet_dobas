@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -14,14 +13,27 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        $user = Auth::user();
-        if (!$user || !method_exists($user, 'hasRole')) {
-            abort(403, 'Accès non autorisé.');
+        // Vérifier si l'utilisateur est connecté avec le guard web
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            
+            if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole($role)) {
+                abort(403, 'Accès non autorisé.');
+            }
+            
+            return $next($request);
         }
-        /** @var \App\Models\User $user */
-        if (!$user->hasRole($role)) {
-            abort(403, 'Accès non autorisé.');
+        
+        // Pour les étudiants, on vérifie s'ils ont le rôle "etudiant"
+        if (Auth::guard('etudiant')->check()) {
+            if ($role !== 'etudiant') {
+                abort(403, 'Accès non autorisé.');
+            }
+            
+            return $next($request);
         }
-        return $next($request);
+        
+        // Si non connecté ou rôle incorrect
+        abort(403, 'Accès non autorisé.');
     }
 }

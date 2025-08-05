@@ -1,47 +1,43 @@
 <?php
-
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class DossierRejeteNotification extends Notification
+class DossierRejeteNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public $motif;
+    protected $motif;
 
-    public function __construct($motif = null)
+    public function __construct($motif)
     {
         $this->motif = $motif;
     }
 
-    public function via(object $notifiable): array
+    public function via($notifiable)
     {
-        return ['mail', 'broadcast'];
+        return ['mail', 'database'];
     }
 
-    public function toMail(object $notifiable)
+    public function toMail($notifiable)
     {
-        return (new \Illuminate\Notifications\Messages\MailMessage)
-            ->line('Votre dossier a été rejeté par la DOBAS.')
-            ->line($this->motif ?: "N'hésitez pas à retenter votre chance lors d'une prochaine session.")
-            ->action('Voir mon dossier', url('/etudiant/dossiers'))
-            ->line('Merci d’utiliser DOBAS !');
+        return (new MailMessage)
+            ->subject('Votre candidature a été rejetée - DOBAS')
+            ->greeting('Cher(e) ' . $notifiable->nom)
+            ->line('Nous regrettons de vous informer que votre candidature a été rejetée.')
+            ->line('Motif : ' . $this->motif)
+            ->action('Consulter votre dossier', url('/etudiant/dossiers'))
+            ->line('N\'hésitez pas à nous contacter pour plus d\'informations.');
     }
 
-    public function toBroadcast(object $notifiable): BroadcastMessage
-    {
-        return new BroadcastMessage([
-            'message' => 'Votre dossier a été rejeté par la DOBAS. ' . ($this->motif ?: "N'hésitez pas à retenter votre chance.")
-        ]);
-    }
-
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            'message' => 'Votre dossier a été rejeté par la DOBAS. ' . ($this->motif ?: "N'hésitez pas à retenter votre chance.")
+            'motif' => $this->motif,
+            'message' => 'Votre candidature a été rejetée',
         ];
     }
 }

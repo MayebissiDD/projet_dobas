@@ -1,14 +1,10 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateDossierPieceTable extends Migration
+return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('dossier_piece', function (Blueprint $table) {
@@ -16,15 +12,15 @@ class CreateDossierPieceTable extends Migration
             $table->foreignId('dossier_id')->constrained()->onDelete('cascade');
             $table->foreignId('piece_id')->constrained()->onDelete('cascade');
             $table->string('fichier'); // chemin du fichier uploadé
+            $table->string('nom_original'); // nom original du fichier
+            $table->string('type_mime'); // type MIME du fichier
+            $table->integer('taille'); // taille du fichier en octets
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('candidature_piece');
+        Schema::dropIfExists('dossier_pieces');
     }
 };

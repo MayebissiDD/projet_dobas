@@ -9,19 +9,21 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('applications', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('dossiers', function (Blueprint $table) {
+            $table->foreignId('bourse_id')->nullable()->constrained()->onDelete('set null');
         });
     }
+
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('applications');
+        Schema::table('dossiers', function (Blueprint $table) {
+            //
+        });
     }
 };

@@ -1,39 +1,45 @@
 <?php
-
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PaiementRecuNotification extends Notification
+class PaiementRecuNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function via(object $notifiable): array
+    protected $paiement;
+
+    public function __construct($paiement = null)
     {
-        return ['mail', 'broadcast'];
+        $this->paiement = $paiement;
     }
 
-    public function toMail(object $notifiable)
+    public function via($notifiable)
     {
-        return (new \Illuminate\Notifications\Messages\MailMessage)
-            ->line('Un paiement a été reçu pour une candidature.')
-            ->action('Voir les paiements', url('/admin/paiements'))
-            ->line('Merci d’utiliser DOBAS !');
+        return ['mail', 'database'];
     }
 
-    public function toBroadcast(object $notifiable): BroadcastMessage
+    public function toMail($notifiable)
     {
-        return new BroadcastMessage([
-            'message' => 'Un paiement a été reçu pour une candidature.',
-        ]);
+        return (new MailMessage)
+            ->subject('Paiement reçu - DOBAS')
+            ->greeting('Cher(e) ' . $notifiable->nom)
+            ->line('Nous avons bien reçu votre paiement pour les frais de dossier.')
+            ->line('Montant : ' . ($this->paiement->montant ?? '7500') . ' FCFA')
+            ->line('Votre candidature est maintenant en cours de traitement.')
+            ->action('Consulter votre dossier', url('/etudiant/dossiers'))
+            ->line('Merci de faire confiance à DOBAS !');
     }
 
-    public function toArray(object $notifiable): array
+    public function toArray($notifiable)
     {
         return [
-            'message' => 'Un paiement a été reçu pour une candidature.',
+            'paiement_id' => $this->paiement->id ?? null,
+            'montant' => $this->paiement->montant ?? '7500',
+            'message' => 'Paiement reçu avec succès',
         ];
     }
 }
