@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
@@ -18,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -30,7 +30,7 @@ class PostulerController extends Controller
     {
         return inertia('Public/Postuler');
     }
-
+    
     /**
      * Soumission complète du dossier de candidature
      */
@@ -38,27 +38,35 @@ class PostulerController extends Controller
     {
         try {
             DB::beginTransaction();
+            
             // 1. Validation complète
             $validatedData = $this->validateCompleteForm($request);
+            
             // 2. Gestion des fichiers uploadés
             $filesData = $this->handleFileUploads($request);
+            
             // 3. Créer le dossier de candidature
             $dossier = $this->createDossier($validatedData, $filesData, $request);
+            
             // 4. Traitement selon le mode de paiement
             if (in_array($validatedData['mode_paiement'], ['mobile_money', 'carte'])) {
                 // Paiement en ligne - sera traité par PaiementController
                 $paiementResponse = $this->initiatePaiementEnLigne($dossier, $validatedData);
+                
                 DB::commit();
+                
                 return response()->json([
                     'success' => true,
                     'requires_payment' => true,
-                    'payment_url' => $paiementResponse['payment_url'],
+                    'payment_url' => $paiementResponse['payment_url'] ?? null,
                     'dossier_id' => $dossier->id
                 ]);
             } else {
                 // Paiement physique - finaliser directement
                 $this->finalizeCandidature($dossier);
+                
                 DB::commit();
+                
                 return response()->json([
                     'success' => true,
                     'requires_payment' => false,
@@ -67,19 +75,32 @@ class PostulerController extends Controller
             }
         } catch (ValidationException $e) {
             DB::rollBack();
+            
+            Log::warning('Erreur de validation lors de la soumission', [
+                'errors' => $e->errors(),
+                'request_data' => $this->maskSensitiveDataArray($request->all())
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            Log::error('Erreur lors de la soumission de candidature', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $this->maskSensitiveDataArray($request->all())
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la soumission: ' . $e->getMessage()
             ], 500);
         }
     }
-
+    
     /**
      * Callback après paiement réussi
      */
@@ -87,25 +108,39 @@ class PostulerController extends Controller
     {
         $dossierId = $request->input('dossier_id');
         $transactionId = $request->input('transaction_id');
+        
         try {
             DB::beginTransaction();
+            
             $dossier = Dossier::findOrFail($dossierId);
+            
             // Mettre à jour le statut de paiement
             $dossier->update([
                 'statut_paiement' => 'paye',
                 'transaction_id' => $transactionId,
                 'date_paiement' => now()
             ]);
+            
             // Finaliser la candidature
             $this->finalizeCandidature($dossier);
+            
             DB::commit();
+            
             return redirect()->route('candidature.confirmation', ['success' => 1]);
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            Log::error('Erreur lors de la finalisation après paiement', [
+                'dossier_id' => $dossierId,
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->route('candidature.index')->with('error', 'Erreur lors de la finalisation');
         }
     }
-
+    
     /**
      * Page de confirmation
      */
@@ -113,11 +148,11 @@ class PostulerController extends Controller
     {
         return inertia('Public/ConfirmationPage');
     }
-
+    
     // ========================
     // MÉTHODES PRIVÉES
     // ========================
-
+    
     /**
      * Validation complète du formulaire
      */
@@ -136,45 +171,44 @@ class PostulerController extends Controller
             'moyenne' => $request->cas_social ? ['nullable'] : ['required', 'numeric', 'between:0,20'],
             'cas_social' => ['boolean'],
             'photo_identite' => 'required|file|mimes:jpeg,jpg,png|max:5120',
-
             // Étape 2 - Fichiers
             'casier_judiciaire' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
             'certificat_nationalite' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
             'attestation_bac' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
             'certificat_medical' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
             'acte_naissance' => 'required|file|mimes:pdf,jpeg,jpg,png|max:5120',
-
             // Étape 3 - Bourse
             'type_bourse' => 'required|in:locale,étrangère,aide_scolaire',
             'etablissement' => 'required|string|max:255',
             'pays_souhaite' => 'required_if:type_bourse,étrangère|nullable|string|max:255',
             'filiere_souhaitee' => 'nullable|string|max:255',
-
             // Étape 4 - Paiement
             'mode_paiement' => 'required|in:mobile_money,carte,depot_physique',
             'certification' => 'required|accepted'
         ];
-
+        
         // Ajouter la validation du passeport si bourse étrangère
         if ($request->input('type_bourse') === 'étrangère') {
             $rules['passeport'] = 'required|file|mimes:pdf,jpeg,jpg,png|max:5120';
         }
-
+        
         // Ajouter la validation de la preuve de paiement si dépôt physique
         if ($request->input('mode_paiement') === 'depot_physique') {
             $rules['preuve_paiement'] = 'required|file|mimes:pdf,jpeg,jpg,png|max:5120';
         }
-
-        return $request->validate($rules);
+        
+        $validatedData = $request->validate($rules);
+        
+        return $validatedData;
     }
-
+    
     /**
      * Création du dossier de candidature
      */
     private function createDossier($validatedData, $filesData, Request $request)
     {
         // Créer le dossier principal avec les informations de l'étudiant
-        $dossier = Dossier::create([
+        $dossierData = [
             'etudiant_id' => null, // Sera mis à jour après création de l'étudiant
             'bourse_id' => $validatedData['bourse_id'] ?? null,
             'ecole_id' => $validatedData['ecole_id'] ?? null,
@@ -184,11 +218,11 @@ class PostulerController extends Controller
             'numero_dossier' => 'DOBAS-' . date('Y') . '-' . str_pad(Dossier::count() + 1, 6, '0', STR_PAD_LEFT),
             'type_bourse' => $validatedData['type_bourse'],
             'etablissement' => $validatedData['etablissement'],
-            'pays_souhaite' => $request->input('pays_souhaite', null), // Utiliser input() avec valeur par défaut
-            'filiere_souhaitee' => $request->input('filiere_souhaitee', null), // Utiliser input() avec valeur par défaut
+            'pays_souhaite' => $request->input('pays_souhaite', null),
+            'filiere_souhaitee' => $request->input('filiere_souhaitee', null),
             'mode_paiement' => $validatedData['mode_paiement'],
             'cas_social' => $validatedData['cas_social'] ?? false,
-            'moyenne' => $validatedData['cas_social'] ? null : ($validatedData['moyenne'] ?? null), // Null si cas_social
+            'moyenne' => $validatedData['cas_social'] ? null : ($validatedData['moyenne'] ?? null),
             'niveau_etude' => $validatedData['niveau_etude'],
             // Informations de l'étudiant
             'nom' => $validatedData['nom'],
@@ -199,17 +233,16 @@ class PostulerController extends Controller
             'sexe' => $validatedData['sexe'],
             'adresse' => $validatedData['adresse'],
             'photo_identite' => isset($filesData['photo_identite']) ? $filesData['photo_identite']['chemin'] : null,
-        ]);
-
-
-
+        ];
+        
+        $dossier = Dossier::create($dossierData);
+        
         // Associer les pièces justificatives
         foreach ($filesData as $typePiece => $fileInfo) {
             if ($typePiece !== 'photo_identite') { // La photo est déjà stockée directement
                 $piece = \App\Models\Piece::where('code', $typePiece)->first();
-
                 if ($piece) {
-                    DossierPiece::create([
+                    $dossierPiece = DossierPiece::create([
                         'dossier_id' => $dossier->id,
                         'piece_id' => $piece->id,
                         'nom_original' => $fileInfo['nom_original'],
@@ -218,13 +251,17 @@ class PostulerController extends Controller
                         'taille' => $fileInfo['taille'],
                         'type_mime' => $fileInfo['type_mime'],
                     ]);
+                } else {
+                    Log::warning('Pièce non trouvée dans la base', [
+                        'piece_code' => $typePiece
+                    ]);
                 }
             }
         }
-
+        
         return $dossier;
     }
-
+    
     private function handleFileUploads(Request $request)
     {
         $requiredFiles = [
@@ -234,28 +271,29 @@ class PostulerController extends Controller
             'certificat_medical',
             'acte_naissance'
         ];
-
+        
         // Utiliser input() avec une valeur par défaut au lieu d'accès direct
         $typeBourse = $request->input('type_bourse');
         $modePaiement = $request->input('mode_paiement');
-
+        
         // Ajouter passeport si bourse étrangère
         if ($typeBourse === 'étrangère') {
             $requiredFiles[] = 'passeport';
         }
-
+        
         // Ajouter preuve de paiement si dépôt physique
         if ($modePaiement === 'depot_physique') {
             $requiredFiles[] = 'preuve_paiement';
         }
-
+        
         $filesData = [];
-
+        
         // Traiter la photo d'identité séparément
         if ($request->hasFile('photo_identite')) {
             $file = $request->file('photo_identite');
             $fileName = time() . '_photo_identite.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('candidatures/photos', $fileName, 'public');
+            
             $filesData['photo_identite'] = [
                 'nom_original' => $file->getClientOriginalName(),
                 'nom_stockage' => $fileName,
@@ -263,14 +301,17 @@ class PostulerController extends Controller
                 'taille' => $file->getSize(),
                 'type_mime' => $file->getMimeType()
             ];
+        } else {
+            Log::warning('Photo d\'identité manquante');
         }
-
+        
         // Traiter les autres fichiers
         foreach ($requiredFiles as $fileField) {
             if ($request->hasFile($fileField)) {
                 $file = $request->file($fileField);
                 $fileName = time() . '_' . $fileField . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('candidatures/pieces', $fileName, 'public');
+                
                 $filesData[$fileField] = [
                     'nom_original' => $file->getClientOriginalName(),
                     'nom_stockage' => $fileName,
@@ -278,17 +319,19 @@ class PostulerController extends Controller
                     'taille' => $file->getSize(),
                     'type_mime' => $file->getMimeType()
                 ];
+            } else {
+                Log::warning('Fichier requis manquant', ['field' => $fileField]);
             }
         }
-
+        
         return $filesData;
     }
-
+    
     private function initiatePaiementEnLigne($dossier, $validatedData)
     {
         // Utiliser l'injection propre du controller
         $paiementController = app(PaiementController::class);
-
+        
         // Utiliser input() avec des valeurs par défaut
         $paiementRequest = new Request([
             'dossier_id' => $dossier->id,
@@ -298,33 +341,52 @@ class PostulerController extends Controller
             'email' => $validatedData['email'],
             'telephone' => $validatedData['telephone']
         ]);
-
+        
         // Appeler le controller de paiement
         $response = $paiementController->initiate($paiementRequest);
-
+        
         // Vérifier le succès
         if (is_array($response) && isset($response['success']) && $response['success'] === true) {
             return $response;
         }
-
+        
         // Si le controller retourne une réponse JSON
         if ($response instanceof \Illuminate\Http\JsonResponse) {
             $data = $response->getData(true);
+            
             if (isset($data['success']) && $data['success'] === true) {
-                return $data;
+                // Correction: utiliser 'link' si 'payment_url' n'existe pas
+                $paymentUrl = $data['payment_url'] ?? ($data['link'] ?? null);
+                
+                // S'assurer que la réponse contient bien l'URL de paiement
+                return [
+                    'success' => true,
+                    'payment_url' => $paymentUrl,
+                    'transaction_id' => $data['transaction_id'] ?? null
+                ];
             } else {
+                Log::error('Échec de l\'initiation du paiement', [
+                    'message' => $data['message'] ?? 'Message non fourni',
+                    'response' => $data
+                ]);
                 throw new \Exception($data['message'] ?? 'Échec de l\'initiation du paiement.');
             }
         }
-
+        
         // Autre type de retour inattendu
+        Log::error('Réponse inattendue du module de paiement', [
+            'response_type' => gettype($response),
+            'response' => method_exists($response, 'getContent') ? $response->getContent() : $response
+        ]);
+        
         throw new \Exception('Réponse inattendue du module de paiement.');
     }
-
+    
     private function finalizeCandidature($dossier)
     {
         // 1. Créer le compte étudiant avec les informations du dossier
         $motDePasse = Str::random(10);
+        
         $etudiant = Etudiant::create([
             'nom' => $dossier->nom,
             'email' => $dossier->email,
@@ -335,26 +397,116 @@ class PostulerController extends Controller
             'sexe' => $dossier->sexe,
             'adresse' => $dossier->adresse,
             'niveau_etude' => $dossier->niveau_etude,
-            'moyenne' => $dossier->cas_social ? null : $dossier->moyenne, // Null si cas_social
+            'moyenne' => $dossier->cas_social ? null : $dossier->moyenne,
             'cas_social' => $dossier->cas_social,
-            'photo' => $dossier->photo_identite, // Si vous stockez la photo dans le dossier
+            'photo' => $dossier->photo_identite,
         ]);
-
+        
         // Assigner le rôle étudiant (Spatie)
         $etudiant->assignRole('etudiant');
-
+        
         // 2. Mettre à jour le statut du dossier
         $dossier->update([
             'statut' => 'soumis',
             'etudiant_id' => $etudiant->id,
             'date_soumission' => now()
         ]);
-
+        
         // 3. Envoyer l'email de bienvenue à l'étudiant
-        $etudiant->notify(new BienvenuePostulerController($motDePasse));
-
+        try {
+            $etudiant->notify(new BienvenuePostulerController($motDePasse));
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi de l\'email de bienvenue', [
+                'etudiant_id' => $etudiant->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
         // 4. Notifier les agents responsables
-        $agents = \App\Models\User::role('agent')->get();
-        Notification::send($agents, new NouvelleCandidatureNotification($dossier));
+        try {
+            $agents = \App\Models\User::role('agent')->get();
+            Notification::send($agents, new NouvelleCandidatureNotification($dossier));
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi des notifications aux agents', [
+                'error' => $e->getMessage(),
+                'dossier_id' => $dossier->id
+            ]);
+        }
+    }
+    
+    /**
+     * Masque les données sensibles (tableaux) pour les logs
+     */
+    private function maskSensitiveDataArray($data)
+    {
+        if (!is_array($data)) return $data;
+        
+        $masked = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $masked[$key] = $this->maskSensitiveDataArray($value);
+            } else {
+                if (in_array($key, ['password', 'mot_de_passe', 'token', 'api_key'])) {
+                    $masked[$key] = str_repeat('*', strlen($value));
+                } elseif (strpos($key, 'email') !== false) {
+                    $masked[$key] = $this->maskEmail($value);
+                } elseif (strpos($key, 'telephone') !== false || strpos($key, 'phone') !== false) {
+                    $masked[$key] = $this->maskSensitiveString($value);
+                } else {
+                    $masked[$key] = $value;
+                }
+            }
+        }
+        
+        return $masked;
+    }
+    
+    /**
+     * Masque les données sensibles (chaînes) pour les logs
+     */
+    private function maskSensitiveString($data)
+    {
+        if (empty($data)) return $data;
+        
+        // Masquer le numéro de téléphone (garder les 2 premiers et 2 derniers caractères)
+        if (strlen($data) > 4) {
+            return substr($data, 0, 2) . str_repeat('*', strlen($data) - 4) . substr($data, -2);
+        }
+        
+        return str_repeat('*', strlen($data));
+    }
+    
+    /**
+     * Masque le nom pour les logs
+     */
+    private function maskName($name)
+    {
+        if (empty($name)) return $name;
+        
+        $parts = explode(' ', $name);
+        $masked = [];
+        
+        foreach ($parts as $part) {
+            if (strlen($part) > 2) {
+                $masked[] = substr($part, 0, 1) . str_repeat('*', strlen($part) - 1);
+            } else {
+                $masked[] = $part;
+            }
+        }
+        
+        return implode(' ', $masked);
+    }
+    
+    /**
+     * Masque l'email pour les logs
+     */
+    private function maskEmail($email)
+    {
+        if (empty($email) || !strpos($email, '@')) return $email;
+        
+        list($name, $domain) = explode('@', $email);
+        $name = substr($name, 0, 2) . str_repeat('*', strlen($name) - 2);
+        
+        return $name . '@' . $domain;
     }
 }
