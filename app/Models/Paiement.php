@@ -15,6 +15,7 @@ class Paiement extends Model
         'reference',
         'transaction_id',
         'date_paiement',
+        'token_verification',
         'details',
     ];
 

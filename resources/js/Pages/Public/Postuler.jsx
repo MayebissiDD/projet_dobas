@@ -27,7 +27,6 @@ export default function Postuler() {
   const [paiementMessage, setPaiementMessage] = useState("");
   
   // États pour la gestion du lien de paiement et des tentatives
-  const [paymentLink, setPaymentLink] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRY_ATTEMPTS = 3; // Limiter à 3 tentatives
   
@@ -50,6 +49,12 @@ export default function Postuler() {
       console.log("Erreur de paiement détectée:", error);
       setPaiementError(true);
       setPaiementMessage(error);
+      
+      // Récupérer le compteur de tentatives depuis le localStorage
+      const savedRetryCount = localStorage.getItem('paymentRetryCount');
+      if (savedRetryCount) {
+        setRetryCount(parseInt(savedRetryCount));
+      }
     }
   }, []);
   
@@ -141,7 +146,9 @@ export default function Postuler() {
   // Fonction pour réinitialiser les états de paiement
   const resetPaymentStates = () => {
     console.log("Réinitialisation des états de paiement");
-    setPaymentLink("");
+    // Supprimer le lien de paiement du localStorage
+    localStorage.removeItem('paymentLink');
+    localStorage.removeItem('paymentRetryCount');
     setRetryCount(0);
     setPaiementError(false);
     setPaiementSuccess(false);
@@ -168,6 +175,9 @@ export default function Postuler() {
   const handleRetryPayment = () => {
     console.log("Réessai du paiement");
     
+    // Récupérer le lien de paiement depuis le localStorage
+    const savedPaymentLink = localStorage.getItem('paymentLink');
+    
     // Vérifier si on a atteint le nombre maximum de tentatives
     if (retryCount >= MAX_RETRY_ATTEMPTS) {
       console.log("Nombre maximum de tentatives atteint");
@@ -178,22 +188,24 @@ export default function Postuler() {
     }
     
     // Vérifier si on a un lien de paiement valide
-    if (!paymentLink) {
+    if (!savedPaymentLink) {
       console.log("Aucun lien de paiement disponible");
       setErrors({ form: "Aucun lien de paiement disponible. Veuillez recommencer le processus de candidature." });
       return;
     }
     
-    // Incrémenter le compteur de tentatives
-    setRetryCount(prev => prev + 1);
+    // Incrémenter le compteur de tentatives et le sauvegarder
+    const newRetryCount = retryCount + 1;
+    setRetryCount(newRetryCount);
+    localStorage.setItem('paymentRetryCount', newRetryCount.toString());
     
     // Réinitialiser les états d'erreur
     setPaiementError(false);
     setPaiementSuccess(false);
     
     // Rediriger vers le même lien de paiement
-    console.log("Redirection vers le lien de paiement existant:", paymentLink);
-    window.location.href = paymentLink;
+    console.log("Redirection vers le lien de paiement existant:", savedPaymentLink);
+    window.location.href = savedPaymentLink;
   };
   
   // Soumission finale du formulaire
@@ -320,9 +332,10 @@ export default function Postuler() {
         console.log("Résultat du paiement (JSON):", paiementResult);
         
         if (paiementResult.success && paiementResult.link) {
-          // Stocker le lien de paiement pour les tentatives futures
-          console.log("Stockage du lien de paiement:", paiementResult.link);
-          setPaymentLink(paiementResult.link);
+          // Stocker le lien de paiement dans le localStorage pour les tentatives futures
+          console.log("Stockage du lien de paiement dans localStorage:", paiementResult.link);
+          localStorage.setItem('paymentLink', paiementResult.link);
+          localStorage.setItem('paymentRetryCount', '0'); // Initialiser le compteur à 0
           
           console.log("Redirection vers la page de paiement:", paiementResult.link);
           window.location.href = paiementResult.link;
@@ -369,6 +382,10 @@ export default function Postuler() {
   // Page d'échec
   if (paiementError) {
     console.log("Affichage de la page d'échec");
+    
+    // Récupérer le lien de paiement depuis le localStorage
+    const savedPaymentLink = localStorage.getItem('paymentLink');
+    
     return (
       <PublicLayout>
         <div className="flex items-center justify-center min-h-screen p-6 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
@@ -396,10 +413,10 @@ export default function Postuler() {
             )}
             
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              {/* Désactiver le bouton si on a atteint la limite */}
+              {/* Désactiver le bouton si on a atteint la limite ou si le lien n'est pas disponible */}
               <Button 
                 onClick={handleRetryPayment} 
-                disabled={retryCount >= MAX_RETRY_ATTEMPTS || !paymentLink}
+                disabled={retryCount >= MAX_RETRY_ATTEMPTS || !savedPaymentLink}
                 className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
               >
                 {retryCount >= MAX_RETRY_ATTEMPTS 
