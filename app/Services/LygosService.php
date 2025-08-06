@@ -34,7 +34,7 @@ class LygosService
             'callback_url' => $data['callback_url'],
             'success_url' => $data['success_url'] ?? route('paiement.lygos.return'),
             'failure_url' => $data['failure_url'] ?? route('paiement.lygos.cancel'),
-            'shop_name' => env('DIB-Business', 'MyApp')
+            'shop_name' => env('DIB-Business', 'DOBAS')
         ];
         
         Log::info('Envoi de la requête à Lygos', [
