@@ -143,7 +143,7 @@ private function initiateMobileMoney($paiement, $request)
         
         if (!empty($response['success']) && $response['success']) {
             // Correction : s'assurer que le transaction_id est bien enregistré
-            $transactionId = $response['transaction_id'] ?? null;
+            $transactionId = $response['order_id'] ?? null;
             
             $paiement->update([
                 'transaction_id' => $transactionId,

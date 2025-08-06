@@ -24,8 +24,8 @@ class Etudiant extends Authenticatable
         'adresse',
         'photo',
         'niveau_etude',
-        'moyenne',
-        'cas_social',
+        // 'moyenne',
+        // 'cas_social',
     ];
     
     protected $hidden = [

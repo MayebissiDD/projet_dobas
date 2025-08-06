@@ -209,7 +209,8 @@ export default function Postuler() {
   };
   
   // Soumission finale du formulaire
-  const handleFinalSubmit = async () => {
+// Soumission finale du formulaire
+const handleFinalSubmit = async () => {
     console.log("Début de la soumission finale du formulaire");
     setIsSubmitting(true);
     setErrors({});
@@ -219,22 +220,22 @@ export default function Postuler() {
     
     // Vérifier que tous les fichiers requis sont présents
     const requiredFiles = [
-      'photo_identite',
-      'casier_judiciaire',
-      'certificat_nationalite',
-      'attestation_bac',
-      'certificat_medical',
-      'acte_naissance'
+        'photo_identite',
+        'casier_judiciaire',
+        'certificat_nationalite',
+        'attestation_bac',
+        'certificat_medical',
+        'acte_naissance'
     ];
     
     if (formData.type_bourse === 'étrangère') {
-      requiredFiles.push('passeport');
-      console.log("Ajout du passeport aux fichiers requis (bourse étrangère)");
+        requiredFiles.push('passeport');
+        console.log("Ajout du passeport aux fichiers requis (bourse étrangère)");
     }
     
     if (formData.mode_paiement === 'depot_physique') {
-      requiredFiles.push('preuve_paiement');
-      console.log("Ajout de la preuve de paiement aux fichiers requis (dépôt physique)");
+        requiredFiles.push('preuve_paiement');
+        console.log("Ajout de la preuve de paiement aux fichiers requis (dépôt physique)");
     }
     
     console.log("Fichiers requis:", requiredFiles);
@@ -242,118 +243,93 @@ export default function Postuler() {
     const missingFiles = requiredFiles.filter(field => !formData[field]);
     
     if (missingFiles.length > 0) {
-      console.error("Fichiers manquants:", missingFiles);
-      setErrors({
-        form: `Veuillez télécharger les fichiers suivants: ${missingFiles.join(', ')}`
-      });
-      setIsSubmitting(false);
-      return;
+        console.error("Fichiers manquants:", missingFiles);
+        setErrors({
+            form: `Veuillez télécharger les fichiers suivants: ${missingFiles.join(', ')}`
+        });
+        setIsSubmitting(false);
+        return;
     }
     
     console.log("Tous les fichiers requis sont présents");
     
     // Debug: Afficher les données avant envoi
     console.log("Données du formulaire avant envoi:", {
-      ...formData,
-      // Masquer les données sensibles pour le log
-      email: formData.email ? formData.email.substring(0, 3) + "***" : null,
-      telephone: formData.telephone ? formData.telephone.substring(0, 3) + "***" : null
+        ...formData,
+        // Masquer les données sensibles pour le log
+        email: formData.email ? formData.email.substring(0, 3) + "***" : null,
+        telephone: formData.telephone ? formData.telephone.substring(0, 3) + "***" : null
     });
     
     console.log("Détails importants:", {
-      pays_souhaite: formData.pays_souhaite,
-      type_bourse: formData.type_bourse,
-      cas_social: formData.cas_social,
-      moyenne: formData.moyenne,
-      mode_paiement: formData.mode_paiement
+        pays_souhaite: formData.pays_souhaite,
+        type_bourse: formData.type_bourse,
+        cas_social: formData.cas_social,
+        moyenne: formData.moyenne,
+        mode_paiement: formData.mode_paiement
     });
     
     try {
-      console.log("Préparation des données pour l'envoi");
-      const formDataToSend = new FormData();
-      
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value instanceof File) {
-          console.log(`Ajout du fichier: ${key} (${value.name}, ${value.size} octets)`);
-          formDataToSend.append(key, value);
-        } else if (key === "cas_social") {
-          formDataToSend.append(key, value ? 1 : 0); // Transformation en 1 ou 0
-          console.log(`Transformation cas_social: ${value} -> ${value ? 1 : 0}`);
-        } else if (value !== null && value !== undefined && value !== "") {
-          formDataToSend.append(key, value);
-        }
-      });
-      
-      console.log("Envoi des données au serveur");
-      const response = await fetch("/candidature/submit", {
-        method: "POST",
-        body: formDataToSend,
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-      });
-      
-      console.log("Réponse du serveur reçue:", {
-        status: response.status,
-        statusText: response.statusText
-      });
-      
-      const data = await response.json();
-      console.log("Réponse du serveur (JSON):", data);
-      
-      if (data.success) {
-        console.log("Candidature soumise avec succès, dossier_id:", data.dossier_id);
+        console.log("Préparation des données pour l'envoi");
+        const formDataToSend = new FormData();
         
-        // Préparer les données de paiement après avoir reçu le dossier_id
-        console.log("Préparation de l'initialisation du paiement");
-        const paiementData = new FormData();
-        paiementData.append("dossier_id", data.dossier_id);
-        paiementData.append("fullName", formData.nom);
-        paiementData.append("email", formData.email);
-        paiementData.append("telephone", formData.telephone);
-        paiementData.append("montant", "7500");
-        paiementData.append("mode", formData.mode_paiement);
-        
-        console.log("Initialisation du paiement");
-        const paiementResponse = await fetch("/paiement/initiate", {
-          method: "POST",
-          body: paiementData,
-          headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
+        Object.entries(formData).forEach(([key, value]) => {
+            if (value instanceof File) {
+                console.log(`Ajout du fichier: ${key} (${value.name}, ${value.size} octets)`);
+                formDataToSend.append(key, value);
+            } else if (key === "cas_social") {
+                formDataToSend.append(key, value ? 1 : 0); // Transformation en 1 ou 0
+                console.log(`Transformation cas_social: ${value} -> ${value ? 1 : 0}`);
+            } else if (value !== null && value !== undefined && value !== "") {
+                formDataToSend.append(key, value);
+            }
         });
         
-        console.log("Réponse du paiement reçue:", {
-          status: paiementResponse.status,
-          statusText: paiementResponse.statusText
+        console.log("Envoi des données au serveur");
+        const response = await fetch("/candidature/submit", {
+            method: "POST",
+            body: formDataToSend,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
         });
         
-        const paiementResult = await paiementResponse.json();
-        console.log("Résultat du paiement (JSON):", paiementResult);
+        console.log("Réponse du serveur reçue:", {
+            status: response.status,
+            statusText: response.statusText
+        });
         
-        if (paiementResult.success && paiementResult.link) {
-          // Stocker le lien de paiement dans le localStorage pour les tentatives futures
-          console.log("Stockage du lien de paiement dans localStorage:", paiementResult.link);
-          localStorage.setItem('paymentLink', paiementResult.link);
-          localStorage.setItem('paymentRetryCount', '0'); // Initialiser le compteur à 0
-          
-          console.log("Redirection vers la page de paiement:", paiementResult.link);
-          window.location.href = paiementResult.link;
+        const data = await response.json();
+        console.log("Réponse du serveur (JSON):", data);
+        
+        if (data.success) {
+            console.log("Candidature soumise avec succès");
+            
+            // Le backend a déjà initialisé le paiement et fourni l'URL
+            if (data.requires_payment && data.link) {
+                // Stocker le lien de paiement dans le localStorage pour les tentatives futures
+                console.log("Stockage du lien de paiement dans localStorage:", data.link);
+                localStorage.setItem('paymentLink', data.link);
+                localStorage.setItem('paymentRetryCount', '0'); // Initialiser le compteur à 0
+                
+                console.log("Redirection vers la page de paiement:", data.link);
+                window.location.href = data.link;
+            } else {
+                // Si aucun paiement n'est requis
+                console.log("Aucun paiement requis, redirection vers la page de succès");
+                setPaiementSuccess(true);
+            }
         } else {
-          console.error("Erreur lors de l'initialisation du paiement:", paiementResult);
-          setErrors({ form: "Erreur lors de l'initialisation du paiement" });
+            console.error("Erreur lors de la soumission:", data);
+            setErrors(data.errors || { form: "Erreur lors de la soumission" });
         }
-      } else {
-        console.error("Erreur lors de la soumission:", data);
-        setErrors(data.errors || { form: "Erreur lors de la soumission" });
-      }
     } catch (error) {
-      console.error("Erreur lors de la soumission:", error);
-      setErrors({ form: "Erreur réseau. Veuillez réessayer." });
+        console.error("Erreur lors de la soumission:", error);
+        setErrors({ form: "Erreur réseau. Veuillez réessayer." });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+};
   
   // Page de succès
   if (paiementSuccess) {

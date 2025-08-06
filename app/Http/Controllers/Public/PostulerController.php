@@ -34,72 +34,74 @@ class PostulerController extends Controller
     /**
      * Soumission complète du dossier de candidature
      */
-    public function submitComplete(Request $request)
-    {
-        try {
-            DB::beginTransaction();
+ public function submitComplete(Request $request)
+{
+    try {
+        DB::beginTransaction();
+        
+        // 1. Validation complète
+        $validatedData = $this->validateCompleteForm($request);
+        
+        // 2. Gestion des fichiers uploadés
+        $filesData = $this->handleFileUploads($request);
+        
+        // 3. Créer le dossier de candidature
+        $dossier = $this->createDossier($validatedData, $filesData, $request);
+        
+        // 4. Traitement selon le mode de paiement
+        if (in_array($validatedData['mode_paiement'], ['mobile_money', 'carte'])) {
+            // Paiement en ligne - sera traité par PaiementController
+            $paiementResponse = $this->initiatePaiementEnLigne($dossier, $validatedData);
             
-            // 1. Validation complète
-            $validatedData = $this->validateCompleteForm($request);
+            DB::commit();
             
-            // 2. Gestion des fichiers uploadés
-            $filesData = $this->handleFileUploads($request);
-            
-            // 3. Créer le dossier de candidature
-            $dossier = $this->createDossier($validatedData, $filesData, $request);
-            
-            // 4. Traitement selon le mode de paiement
-            if (in_array($validatedData['mode_paiement'], ['mobile_money', 'carte'])) {
-                // Paiement en ligne - sera traité par PaiementController
-                $paiementResponse = $this->initiatePaiementEnLigne($dossier, $validatedData);
-                
-                DB::commit();
-                
-                return response()->json([
-                    'success' => true,
-                    'requires_payment' => true,
-                    'payment_url' => $paiementResponse['payment_url'] ?? null,
-                    'dossier_id' => $dossier->id
-                ]);
-            } else {
-                // Paiement physique - finaliser directement
-                $this->finalizeCandidature($dossier);
-                
-                DB::commit();
-                
-                return response()->json([
-                    'success' => true,
-                    'requires_payment' => false,
-                    'message' => 'Candidature soumise avec succès'
-                ]);
-            }
-        } catch (ValidationException $e) {
-            DB::rollBack();
-            
-            Log::warning('Erreur de validation lors de la soumission', [
-                'errors' => $e->errors(),
-                'request_data' => $this->maskSensitiveDataArray($request->all())
+            // Retourner une réponse cohérente avec celle du PaiementController
+            return response()->json([
+                'success' => true,
+                'requires_payment' => true,
+                'link' => $paiementResponse['payment_url'] ?? null,  // Utiliser 'link' comme dans PaiementController
+                'transaction_id' => $paiementResponse['transaction_id'] ?? null,
+                'dossier_id' => $dossier->id
             ]);
+        } else {
+            // Paiement physique - finaliser directement
+            $this->finalizeCandidature($dossier);
+            
+            DB::commit();
             
             return response()->json([
-                'success' => false,
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            Log::error('Erreur lors de la soumission de candidature', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $this->maskSensitiveDataArray($request->all())
+                'success' => true,
+                'requires_payment' => false,
+                'message' => 'Candidature soumise avec succès'
             ]);
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la soumission: ' . $e->getMessage()
-            ], 500);
         }
+    } catch (ValidationException $e) {
+        DB::rollBack();
+        
+        Log::warning('Erreur de validation lors de la soumission', [
+            'errors' => $e->errors(),
+            'request_data' => $this->maskSensitiveDataArray($request->all())
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Erreur lors de la soumission de candidature', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $this->maskSensitiveDataArray($request->all())
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la soumission: ' . $e->getMessage()
+        ], 500);
     }
+}
     
     /**
      * Callback après paiement réussi
