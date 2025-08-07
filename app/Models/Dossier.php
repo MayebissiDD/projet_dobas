@@ -34,6 +34,7 @@ class Dossier extends Model
         'sexe',
         'adresse',
         'nom',
+        'prenom',
         'email',
         'telephone',
         'photo_identite',

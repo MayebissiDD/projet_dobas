@@ -5,13 +5,17 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Notifications\DatabaseNotification; // Ajout de cet import
+use Illuminate\Notifications\DatabaseNotification;
+use Spatie\Permission\Traits\HasRoles;
 
 class Etudiant extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles; 
     
     protected $table = 'etudiants';
+    
+    // Spécifier le guard à utiliser pour les rôles et permissions
+    protected $guard_name = 'web'; // Ajouter cette ligne
     
     protected $fillable = [
         'nom',
@@ -22,10 +26,8 @@ class Etudiant extends Authenticatable
         'date_naissance',
         'lieu_naissance',
         'adresse',
-        'photo',
+        'photo_identite',
         'niveau_etude',
-        // 'moyenne',
-        // 'cas_social',
     ];
     
     protected $hidden = [
@@ -37,7 +39,6 @@ class Etudiant extends Authenticatable
         'date_naissance' => 'date',
         'password' => 'hashed',
         'cas_social' => 'boolean',
-        'prenom' => 'nullable',
     ];
     
     // Relations
