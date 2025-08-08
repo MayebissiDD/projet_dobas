@@ -104,7 +104,7 @@ class WebhookController extends Controller
         $paiement = Paiement::firstOrCreate(
             ['dossier_id' => $dossier->id, 'reference' => $transactionId],
             [
-                'montant' => 7500,
+                'montant' => 200,
                 'methode' => 'mobile_money',
                 'statut' => 'en_attente'
             ]

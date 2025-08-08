@@ -29,51 +29,58 @@ export default function Home() {
 
   const heroSlides = [
     {
-      title: "Plateforme nationale des bourses et aides scolaires",
-      subtitle: "Votre avenir commence ici",
+      title: "DOBAS - Plateforme nationale des bourses et aides scolaires",
+      subtitle: "Accompagner chaque élève et étudiant vers la réussite, sans barrière financière.",
       gradient: "from-green-600 to-emerald-700"
     },
     {
-      title: "Des opportunités d'excellence pour tous",
-      subtitle: "Éducation de qualité, avenir prometteur",
+      title: "Des opportunités pour tous les talents",
+      subtitle: "Découvrez les bourses locales, étrangères et aides scolaires accessibles à tous.",
       gradient: "from-yellow-500 to-amber-600"
     },
     {
-      title: "Ensemble vers la réussite éducative",
-      subtitle: "Investir dans l'éducation, c'est investir dans l'avenir",
+      title: "Un guichet unique pour votre avenir",
+      subtitle: "Toutes les informations, démarches et accompagnements réunis sur une seule plateforme.",
       gradient: "from-red-500 to-rose-600"
     }
   ]
 
   const stats = [
-    { icon: Award, number: "50+", label: "Bourses actives", color: "text-green-600" },
-    { icon: Users, number: "25+", label: "Écoles partenaires", color: "text-yellow-600" },
-    { icon: GraduationCap, number: "2500+", label: "Candidatures reçues", color: "text-red-600" },
-    { icon: TrendingUp, number: "89%", label: "Taux de réussite", color: "text-emerald-600" }
+    { icon: Award, number: "30+", label: "Bourses disponibles", color: "text-green-600" },
+    { icon: Users, number: "20+", label: "Écoles partenaires", color: "text-yellow-600" },
+    { icon: GraduationCap, number: "2000+", label: "Candidatures accompagnées", color: "text-red-600" },
+    { icon: TrendingUp, number: "95%", label: "Taux de réussite", color: "text-emerald-600" }
   ]
 
   const services = [
     {
       icon: BookOpen,
       title: "Recherche de bourses",
-      description: "Trouvez la bourse qui correspond à votre profil et vos ambitions",
+      description: "Consultez et comparez toutes les bourses et aides scolaires accessibles selon votre profil.",
       color: "bg-green-50 text-green-700 border-green-200",
       iconColor: "text-green-600"
     },
     {
-      icon: Users,
+      icon: Award,
       title: "Accompagnement personnalisé",
-      description: "Bénéficiez d'un suivi individualisé tout au long de votre parcours",
+      description: "Bénéficiez d’un suivi et de conseils à chaque étape de votre candidature.",
       color: "bg-yellow-50 text-yellow-700 border-yellow-200",
       iconColor: "text-yellow-600"
     },
     {
       icon: Globe,
-      title: "Opportunités internationales",
-      description: "Accédez aux meilleures universités et programmes à l'étranger",
+      title: "Bourses locales & étrangères",
+      description: "Accédez à des opportunités au Bénin et à l’international, pour tous les niveaux d’études.",
       color: "bg-red-50 text-red-700 border-red-200",
       iconColor: "text-red-600"
-    }
+    },
+    {
+      icon: CheckCircle,
+      title: "Processus simplifié",
+      description: "Un dossier unique, des démarches centralisées et un suivi transparent.",
+      color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      iconColor: "text-emerald-600"
+    },
   ]
 
   const testimonials = [
@@ -317,7 +324,7 @@ export default function Home() {
                     </div>
                     <div>
                       <div className="font-semibold">Téléphone</div>
-                      <div className="text-green-100">+242 XX XX XX XX</div>
+                      <div className="text-green-100">+242 06 440 70 66  </div>
                     </div>
                   </div>
 
@@ -405,7 +412,7 @@ export default function Home() {
                   <Button
                     onClick={handleSubmit}
                     disabled={sending}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-lg font-semibold rounded-full shadow-md transition-all duration-300 flex items-center justify-center"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white mt-5 px-6 py-3 text-lg font-semibold rounded-full shadow-md transition-all duration-300 flex items-center justify-center"
                   >
                     {sending ? (
                       <>

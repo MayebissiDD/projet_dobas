@@ -9,7 +9,15 @@ export default function BoursesList({ bourses }) {
   return (
     <PublicLayout>
       <div className="max-w-5xl mx-auto p-6 space-y-12">
-        <h1 className="text-3xl font-bold mb-8 text-center text-green-700 dark:text-yellow-400">Bourses disponibles</h1>
+        <h1 className="text-3xl font-bold mb-4 text-center text-green-700 dark:text-yellow-400">Bourses et aides scolaires</h1>
+        <div className="mb-8 text-center text-zinc-700 dark:text-zinc-200 max-w-3xl mx-auto">
+          <p>
+            Retrouvez ici toutes les bourses locales, étrangères et aides scolaires accessibles via la DOBAS. Chaque fiche détaille les conditions, les pièces à fournir et le processus de candidature. Les informations sont mises à jour régulièrement selon les offres et les recommandations officielles.
+          </p>
+          <p className="mt-2">
+            <strong>Types de bourses :</strong> bourses d’excellence, bourses sociales, aides à la mobilité, bourses étrangères, etc. Pour chaque bourse, vérifiez bien les critères d’éligibilité et préparez l’ensemble des documents demandés.
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 gap-8">
           {bourses.length === 0 && <div className="text-center text-zinc-500 dark:text-zinc-300">Aucune bourse disponible actuellement.</div>}
           {bourses.map(bourse => (

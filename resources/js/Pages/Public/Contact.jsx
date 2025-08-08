@@ -292,14 +292,14 @@ export default function Contact() {
                   { 
                     icon: Phone, 
                     label: "Téléphone", 
-                    value: "+242 06 123 45 67", 
-                    link: "tel:+24206123456",
+                    value: "+242 06 440 70 66 ", // Numéro générique du PDF, à adapter si besoin
+                    link: "tel:+242064407066 ",
                     color: "bg-yellow-500"
                   },
                   { 
                     icon: MapPin, 
                     label: "Adresse", 
-                    value: "12 avenue de l'Université, Brazzaville, Congo",
+                    value: "12 avenue de l'Université, Cotonou, Bénin",
                     color: "bg-red-500"
                   }
                 ].map((contact, index) => (
