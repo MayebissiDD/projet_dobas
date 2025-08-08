@@ -67,26 +67,27 @@ export default function Apropos() {
     { icon: <Award className="h-8 w-8" />, number: 95, label: "Taux de réussite", suffix: "%" },
     { icon: <Globe className="h-8 w-8" />, number: 20, label: "Écoles partenaires", suffix: "+" },
     { icon: <GraduationCap className="h-8 w-8" />, number: 30, label: "Bourses disponibles", suffix: "+" },
+
   ];
 
   const values = [
     {
-      icon: <Target className="h-12 w-12" />,
+      icon: <Target className="w-12 h-12" />,
       title: "Excellence",
       description: "Nous visons l'excellence dans l'accompagnement de chaque étudiant vers la réussite académique."
     },
     {
-      icon: <Heart className="h-12 w-12" />,
+      icon: <Heart className="w-12 h-12" />,
       title: "Engagement",
       description: "Notre engagement envers l'éducation congolaise guide chacune de nos actions quotidiennes."
     },
     {
-      icon: <Handshake className="h-12 w-12" />,
+      icon: <Handshake className="w-12 h-12" />,
       title: "Partenariat",
       description: "Nous cultivons des partenariats durables avec les meilleures institutions éducatives."
     },
     {
-      icon: <TrendingUp className="h-12 w-12" />,
+      icon: <TrendingUp className="w-12 h-12" />,
       title: "Innovation",
       description: "Nous modernisons constamment nos processus pour offrir la meilleure expérience."
     }
@@ -111,7 +112,7 @@ export default function Apropos() {
     },
     {
       question: "Y a-t-il des frais à payer pour candidater ?",
-      answer: "Oui, des frais de traitement de 5 000 FCFA sont requis pour couvrir les coûts administratifs, l'évaluation du dossier et le suivi personnalisé. Le paiement s'effectue en ligne via MTN Mobile Money, Orange Money ou carte bancaire. Ces frais ne sont pas remboursables."
+      answer: "Oui, des frais de traitement de 5 000 FCFA sont requis pour couvrir les coûts administratifs, l'évaluation du dossier et le suivi personnalisé. Le paiement s'effectue en ligne via MTN Mobile Money ou carte bancaire. Ces frais ne sont pas remboursables."
     },
     {
       question: "Quels documents dois-je fournir obligatoirement ?",
@@ -143,20 +144,20 @@ export default function Apropos() {
     <PublicLayout>
       <div className="min-h-screen bg-white dark:bg-zinc-900">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-r from-green-600 via-yellow-500 to-red-500 text-white">
+        <section className="relative overflow-hidden text-white bg-gradient-to-r from-green-600 via-yellow-500 to-red-500">
           <div className="absolute inset-0 bg-black/20"></div>
-          <div className="relative z-10 max-w-7xl mx-auto px-4 py-24">
-            <div className="text-center space-y-6">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-white/20 rounded-full mb-6 animate-bounce">
-                <GraduationCap className="h-12 w-12" />
+          <div className="relative z-10 px-4 py-24 mx-auto max-w-7xl">
+            <div className="space-y-6 text-center">
+              <div className="inline-flex items-center justify-center w-24 h-24 mb-6 rounded-full bg-white/20 animate-bounce">
+                <GraduationCap className="w-12 h-12" />
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold mb-6">
+              <h1 className="mb-6 text-5xl font-bold md:text-6xl">
                 DOBAS CONGO
               </h1>
-              <p className="text-xl md:text-2xl font-light max-w-3xl mx-auto">
+              <p className="max-w-3xl mx-auto text-xl font-light md:text-2xl">
                 Direction d'Orientation des Bourses et Aides Scolaires
               </p>
-              <p className="text-lg max-w-2xl mx-auto opacity-90">
+              <p className="max-w-2xl mx-auto text-lg opacity-90">
                 Votre partenaire de confiance pour l'accès à l'enseignement supérieur et l'excellence académique
               </p>
             </div>
@@ -165,8 +166,8 @@ export default function Apropos() {
 
         {/* Stats Section */}
         <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center group">
                   <div className={`
@@ -177,7 +178,7 @@ export default function Apropos() {
                   `}>
                     {stat.icon}
                   </div>
-                  <div className="text-4xl font-bold text-gray-800 mb-2 bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text text-transparent">
+                  <div className="mb-2 text-4xl font-bold text-transparent text-gray-800 bg-gradient-to-r from-green-600 to-yellow-600 bg-clip-text">
                     <AnimatedNumber end={stat.number} suffix={stat.suffix} />
                   </div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
@@ -189,13 +190,13 @@ export default function Apropos() {
 
         {/* Mot du Directeur */}
         <section className="py-20 bg-gradient-to-r from-green-50 to-yellow-50">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="grid items-center gap-12 md:grid-cols-2">
               <div className="space-y-6">
-                <h2 className="text-4xl font-bold text-green-700 mb-6">
+                <h2 className="mb-6 text-4xl font-bold text-green-700">
                   Mot du Directeur Général
                 </h2>
-                <div className="prose prose-lg text-gray-700 space-y-4">
+                <div className="space-y-4 prose prose-lg text-gray-700">
                   <p className="text-lg leading-relaxed">
                     <strong>Chers élèves, étudiants et partenaires,</strong>
                   </p>
@@ -205,10 +206,12 @@ export default function Apropos() {
                   <p className="text-lg leading-relaxed">
                     Notre mission est de centraliser l’information, simplifier les démarches et accompagner chaque candidat dans la construction de son avenir, en partenariat avec les établissements et les familles.
                   </p>
+
                   <p className="text-lg leading-relaxed font-semibold text-green-700">
                     Ensemble, faisons de l’éducation un levier de développement et d’épanouissement pour notre nation.
+
                   </p>
-                  <p className="text-lg leading-relaxed italic">
+                  <p className="text-lg italic leading-relaxed">
                     — Le Directeur Général de la DOBAS
                   </p>
                 </div>
@@ -218,11 +221,13 @@ export default function Apropos() {
                   <img
                     src={dg}
                     alt="Directeur Général de la DOBAS"
+
                     className="rounded-3xl shadow-2xl border-8 border-white w-full object-contain bg-white transform hover:scale-105 transition-all duration-300"
+
                   />
                 </div>
-                <div className="absolute -top-6 -right-6 w-full h-full bg-gradient-to-br from-green-300/30 to-yellow-300/30 rounded-3xl -z-10 blur-sm"></div>
-                <div className="absolute -top-3 -right-3 w-full h-full bg-gradient-to-br from-green-400/20 to-yellow-400/20 rounded-3xl -z-10"></div>
+                <div className="absolute w-full h-full -top-6 -right-6 bg-gradient-to-br from-green-300/30 to-yellow-300/30 rounded-3xl -z-10 blur-sm"></div>
+                <div className="absolute w-full h-full -top-3 -right-3 bg-gradient-to-br from-green-400/20 to-yellow-400/20 rounded-3xl -z-10"></div>
               </div>
             </div>
           </div>
@@ -230,17 +235,17 @@ export default function Apropos() {
 
         {/* Nos Valeurs */}
         <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-green-700 mb-4">Nos Valeurs</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="mb-16 text-center">
+              <h2 className="mb-4 text-4xl font-bold text-green-700">Nos Valeurs</h2>
+              <p className="max-w-2xl mx-auto text-lg text-gray-600">
                 Les principes qui guident notre mission d'accompagnement des étudiants congolais
               </p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {values.map((value, index) => (
-                <Card key={index} className="border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-gradient-to-br from-white to-gray-50 rounded-2xl overflow-hidden">
-                  <CardContent className="p-8 text-center relative">
+                <Card key={index} className="overflow-hidden transition-all duration-300 border-0 shadow-xl hover:shadow-2xl hover:-translate-y-2 bg-gradient-to-br from-white to-gray-50 rounded-2xl">
+                  <CardContent className="relative p-8 text-center">
                     <div className={`
                       inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 shadow-lg transform hover:scale-110 transition-all duration-300
                       ${index % 4 === 0 ? 'bg-gradient-to-br from-green-400 to-green-600 text-white' :
@@ -252,9 +257,10 @@ export default function Apropos() {
                     <h3 className="text-2xl font-bold text-gray-800 mb-4">{value.title}</h3>
                     <p className="text-gray-600 text-lg leading-relaxed">{value.description}</p>
                     <div className={`absolute top-0 left-0 w-full h-1 ${index % 4 === 0 ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                        index % 4 === 1 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                          index % 4 === 2 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-blue-400 to-blue-600'
+                      index % 4 === 1 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                        index % 4 === 2 ? 'bg-gradient-to-r from-red-400 to-red-600' : 'bg-gradient-to-r from-blue-400 to-blue-600'
                       }`}></div>
+
                   </CardContent>
                 </Card>
               ))}
@@ -263,9 +269,9 @@ export default function Apropos() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-r from-green-600 to-red-600 text-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+        <section className="py-20 text-white bg-gradient-to-r from-green-600 to-red-600">
+          <div className="px-4 mx-auto max-w-7xl">
+            <div className="grid items-center gap-12 md:grid-cols-2">
               <div className="space-y-6">
                 <h2 className="text-4xl font-bold leading-tight">
                   Investir dans l'éducation,<br />
@@ -285,6 +291,7 @@ export default function Apropos() {
                       Nous contacter
                     </Button>
                   </a>
+
                 </div>
               </div>
               <div className="relative">
@@ -292,9 +299,10 @@ export default function Apropos() {
                   src={hero1}
                   alt="Étudiants DOBAS"
                   className="rounded-3xl shadow-2xl border-8 border-white w-full object-contain bg-white transform hover:scale-105 transition-all duration-300"
+
                 />
-                <div className="absolute -bottom-6 -left-6 w-full h-full bg-gradient-to-br from-yellow-300/30 to-red-300/30 rounded-3xl -z-10 blur-sm"></div>
-                <div className="absolute -bottom-3 -left-3 w-full h-full bg-gradient-to-br from-yellow-400/20 to-red-400/20 rounded-3xl -z-10"></div>
+                <div className="absolute w-full h-full -bottom-6 -left-6 bg-gradient-to-br from-yellow-300/30 to-red-300/30 rounded-3xl -z-10 blur-sm"></div>
+                <div className="absolute w-full h-full -bottom-3 -left-3 bg-gradient-to-br from-yellow-400/20 to-red-400/20 rounded-3xl -z-10"></div>
               </div>
             </div>
           </div>
@@ -305,6 +313,7 @@ export default function Apropos() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-green-700 mb-4">Nos Partenaires</h2>
+
               <p className="text-lg text-gray-600">
                 Institutions de confiance qui nous accompagnent dans notre mission
               </p>
@@ -321,6 +330,7 @@ export default function Apropos() {
                     alt={`Partenaire ${index + 1}`}
                     className="max-h-20 w-auto object-contain mx-auto"
                     style={{ transition: 'transform 0.3s', }}
+
                   />
                 </div>
               ))}
@@ -330,28 +340,28 @@ export default function Apropos() {
 
         {/* FAQ */}
         <section className="py-20 bg-white">
-          <div className="max-w-4xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-green-700 mb-4">Questions Fréquentes</h2>
+          <div className="max-w-4xl px-4 mx-auto">
+            <div className="mb-16 text-center">
+              <h2 className="mb-4 text-4xl font-bold text-green-700">Questions Fréquentes</h2>
               <p className="text-lg text-gray-600">
                 Trouvez rapidement les réponses à vos questions les plus courantes
               </p>
             </div>
             <div className="space-y-6">
               {faqItems.map((item, index) => (
-                <Card key={index} className="shadow-lg hover:shadow-xl transition-all duration-300 border-0 rounded-2xl overflow-hidden">
+                <Card key={index} className="overflow-hidden transition-all duration-300 border-0 shadow-lg hover:shadow-xl rounded-2xl">
                   <CardContent className="p-0">
                     <button
                       onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                      className="w-full px-8 py-6 text-left flex justify-between items-center hover:bg-gradient-to-r hover:from-green-50 hover:to-yellow-50 transition-all duration-300 group"
+                      className="flex items-center justify-between w-full px-8 py-6 text-left transition-all duration-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-yellow-50 group"
                     >
-                      <span className="font-bold text-gray-800 text-lg group-hover:text-green-700 transition-colors duration-300">{item.question}</span>
+                      <span className="text-lg font-bold text-gray-800 transition-colors duration-300 group-hover:text-green-700">{item.question}</span>
                       <div className={`p-2 rounded-full transition-all duration-300 ${openFaq === index ? 'bg-green-100 rotate-180' : 'bg-gray-100 group-hover:bg-green-100'}`}>
                         <ChevronDown className={`w-5 h-5 transition-all duration-300 ${openFaq === index ? 'text-green-600' : 'text-gray-500 group-hover:text-green-600'}`} />
                       </div>
                     </button>
                     {openFaq === index && (
-                      <div className="px-8 pb-6 text-gray-700 leading-relaxed text-lg bg-gradient-to-r from-green-50/30 to-yellow-50/30 animate-fadeIn border-t border-gray-100">
+                      <div className="px-8 pb-6 text-lg leading-relaxed text-gray-700 border-t border-gray-100 bg-gradient-to-r from-green-50/30 to-yellow-50/30 animate-fadeIn">
                         <div className="pt-4">
                           {item.answer}
                         </div>

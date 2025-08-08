@@ -7,11 +7,13 @@ use App\Models\Dossier;
 use App\Models\Etudiant;
 use App\Models\DossierPiece;
 use App\Models\Bourse;
+use App\Models\Piece;
 use App\Models\Ecole;
 use App\Models\Filiere;
 use App\Notifications\BienvenuePostulerController;
 use App\Notifications\NouvelleCandidatureNotification;
 use App\Notifications\NouvellePostulerController;
+use App\Services\MTNTindaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,85 +25,101 @@ use Illuminate\Validation\ValidationException;
 
 class PostulerController extends Controller
 {
+    protected $mtnTindaService;
+
+    public function __construct(MTNTindaService $mtnTindaService)
+    {
+        $this->mtnTindaService = $mtnTindaService;
+    }
+
     /**
      * Afficher le formulaire de candidature
      */
     public function index()
     {
-        return inertia('Public/Postuler');
+        // Récupérer les paramètres de la requête
+        $success = request()->query('success');
+        $error = request()->query('error');
+        $paymentStatus = request()->query('payment_status');
+        
+        return inertia('Public/Postuler', [
+            'success' => $success,
+            'error' => $error,
+            'payment_status' => $paymentStatus
+        ]);
     }
     
     /**
      * Soumission complète du dossier de candidature
      */
- public function submitComplete(Request $request)
-{
-    try {
-        DB::beginTransaction();
-        
-        // 1. Validation complète
-        $validatedData = $this->validateCompleteForm($request);
-        
-        // 2. Gestion des fichiers uploadés
-        $filesData = $this->handleFileUploads($request);
-        
-        // 3. Créer le dossier de candidature
-        $dossier = $this->createDossier($validatedData, $filesData, $request);
-        
-        // 4. Traitement selon le mode de paiement
-        if (in_array($validatedData['mode_paiement'], ['mobile_money', 'carte'])) {
-            // Paiement en ligne - sera traité par PaiementController
-            $paiementResponse = $this->initiatePaiementEnLigne($dossier, $validatedData);
+    public function submitComplete(Request $request)
+    {
+        try {
+            DB::beginTransaction();
             
-            DB::commit();
+            // 1. Validation complète
+            $validatedData = $this->validateCompleteForm($request);
             
-            // Retourner une réponse cohérente avec celle du PaiementController
-            return response()->json([
-                'success' => true,
-                'requires_payment' => true,
-                'link' => $paiementResponse['payment_url'] ?? null,  // Utiliser 'link' comme dans PaiementController
-                'transaction_id' => $paiementResponse['transaction_id'] ?? null,
-                'dossier_id' => $dossier->id
+            // 2. Gestion des fichiers uploadés
+            $filesData = $this->handleFileUploads($request);
+            
+            // 3. Créer le dossier de candidature
+            $dossier = $this->createDossier($validatedData, $filesData, $request);
+            
+            // 4. Traitement selon le mode de paiement
+            if (in_array($validatedData['mode_paiement'], ['mobile_money', 'carte'])) {
+                // Paiement en ligne - sera traité par PaiementController
+                $paiementResponse = $this->initiatePaiementEnLigne($dossier, $validatedData);
+                
+                DB::commit();
+                
+                // Retourner une réponse cohérente avec celle du PaiementController
+                return response()->json([
+                    'success' => true,
+                    'requires_payment' => true,
+                    'link' => $paiementResponse['payment_url'] ?? null,  // Utiliser 'link' comme dans PaiementController
+                    'transaction_id' => $paiementResponse['transaction_id'] ?? null,
+                    'dossier_id' => $dossier->id
+                ]);
+            } else {
+                // Paiement physique - finaliser directement
+                $this->finalizeCandidature($dossier);
+                
+                DB::commit();
+                
+                return response()->json([
+                    'success' => true,
+                    'requires_payment' => false,
+                    'message' => 'Candidature soumise avec succès'
+                ]);
+            }
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            
+            Log::warning('Erreur de validation lors de la soumission', [
+                'errors' => $e->errors(),
+                'request_data' => $this->maskSensitiveDataArray($request->all())
             ]);
-        } else {
-            // Paiement physique - finaliser directement
-            $this->finalizeCandidature($dossier);
-            
-            DB::commit();
             
             return response()->json([
-                'success' => true,
-                'requires_payment' => false,
-                'message' => 'Candidature soumise avec succès'
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Erreur lors de la soumission de candidature', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $this->maskSensitiveDataArray($request->all())
             ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la soumission: ' . $e->getMessage()
+            ], 500);
         }
-    } catch (ValidationException $e) {
-        DB::rollBack();
-        
-        Log::warning('Erreur de validation lors de la soumission', [
-            'errors' => $e->errors(),
-            'request_data' => $this->maskSensitiveDataArray($request->all())
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'errors' => $e->errors()
-        ], 422);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        Log::error('Erreur lors de la soumission de candidature', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'request_data' => $this->maskSensitiveDataArray($request->all())
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de la soumission: ' . $e->getMessage()
-        ], 500);
     }
-}
     
     /**
      * Callback après paiement réussi
@@ -148,7 +166,17 @@ class PostulerController extends Controller
      */
     public function confirmation()
     {
-        return inertia('Public/ConfirmationPage');
+        // Récupérer les paramètres de la requête
+        $success = request()->query('success');
+        $error = request()->query('error');
+        $paymentStatus = request()->query('payment_status');
+        
+        // Rediriger vers la page d'index avec les paramètres de statut
+        return redirect()->route('candidature.index', [
+            'success' => $success,
+            'error' => $error,
+            'payment_status' => $paymentStatus ?? 'success'
+        ]);
     }
     
     // ========================
@@ -162,7 +190,9 @@ class PostulerController extends Controller
     {
         $rules = [
             // Étape 1 - Identification
+            'nationalite' => 'required|string|max:255',
             'nom' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
             'date_naissance' => 'required|date|before:today',
             'lieu_naissance' => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
@@ -184,6 +214,7 @@ class PostulerController extends Controller
             'etablissement' => 'required|string|max:255',
             'pays_souhaite' => 'required_if:type_bourse,étrangère|nullable|string|max:255',
             'filiere_souhaitee' => 'nullable|string|max:255',
+            // 'niveau_vise' => 'required|string|max:255',
             // Étape 4 - Paiement
             'mode_paiement' => 'required|in:mobile_money,carte,depot_physique',
             'certification' => 'required|accepted'
@@ -209,12 +240,22 @@ class PostulerController extends Controller
      */
     private function createDossier($validatedData, $filesData, Request $request)
     {
+        // Récupérer les IDs de l'école et de la filière si nécessaire
+        $ecole = Ecole::where('nom', $validatedData['etablissement'])->first();
+        $filiere = null;
+        
+        if ($ecole && isset($validatedData['filiere_souhaitee'])) {
+            $filiere = Filiere::where('nom', $validatedData['filiere_souhaitee'])
+                ->where('ecole_id', $ecole->id)
+                ->first();
+        }
+        
         // Créer le dossier principal avec les informations de l'étudiant
         $dossierData = [
             'etudiant_id' => null, // Sera mis à jour après création de l'étudiant
-            'bourse_id' => $validatedData['bourse_id'] ?? null,
-            'ecole_id' => $validatedData['ecole_id'] ?? null,
-            'filiere_id' => $validatedData['filiere_id'] ?? null,
+            'bourse_id' => null, // Sera mis à jour plus tard si nécessaire
+            'ecole_id' => $ecole ? $ecole->id : null,
+            'filiere_id' => $filiere ? $filiere->id : null,
             'statut' => 'en_attente',
             'statut_paiement' => $validatedData['mode_paiement'] === 'depot_physique' ? 'en_attente' : 'non_paye',
             'numero_dossier' => 'DOBAS-' . date('Y') . '-' . str_pad(Dossier::count() + 1, 6, '0', STR_PAD_LEFT),
@@ -222,12 +263,15 @@ class PostulerController extends Controller
             'etablissement' => $validatedData['etablissement'],
             'pays_souhaite' => $request->input('pays_souhaite', null),
             'filiere_souhaitee' => $request->input('filiere_souhaitee', null),
+            'niveau_vise' => $request->input('niveau_vise', null),
             'mode_paiement' => $validatedData['mode_paiement'],
             'cas_social' => $validatedData['cas_social'] ?? false,
             'moyenne' => $validatedData['cas_social'] ? null : ($validatedData['moyenne'] ?? null),
             'niveau_etude' => $validatedData['niveau_etude'],
+            'nationalite' => $validatedData['nationalite'],
             // Informations de l'étudiant
             'nom' => $validatedData['nom'],
+            'prenom' => $validatedData['prenom'] ?? '',
             'email' => $validatedData['email'],
             'telephone' => $validatedData['telephone'],
             'date_naissance' => $validatedData['date_naissance'],
@@ -242,22 +286,27 @@ class PostulerController extends Controller
         // Associer les pièces justificatives
         foreach ($filesData as $typePiece => $fileInfo) {
             if ($typePiece !== 'photo_identite') { // La photo est déjà stockée directement
-                $piece = \App\Models\Piece::where('code', $typePiece)->first();
-                if ($piece) {
-                    $dossierPiece = DossierPiece::create([
-                        'dossier_id' => $dossier->id,
-                        'piece_id' => $piece->id,
-                        'nom_original' => $fileInfo['nom_original'],
-                        'nom_stockage' => $fileInfo['nom_stockage'],
-                        'chemin' => $fileInfo['chemin'],
-                        'taille' => $fileInfo['taille'],
-                        'type_mime' => $fileInfo['type_mime'],
-                    ]);
-                } else {
-                    Log::warning('Pièce non trouvée dans la base', [
-                        'piece_code' => $typePiece
-                    ]);
-                }
+                // Récupérer ou créer la pièce correspondant au code
+                $piece = Piece::firstOrCreate(
+                    ['code' => $typePiece],
+                    [
+                        'nom' => ucwords(str_replace('_', ' ', $typePiece)),
+                        'description' => 'Pièce jointe: ' . $typePiece,
+                        'obligatoire' => true,
+                        'type' => 'document'
+                    ]
+                );
+                
+                // Créer l'association entre le dossier et la pièce
+                DossierPiece::create([
+                    'dossier_id' => $dossier->id,
+                    'piece_id' => $piece->id,
+                    'nom_original' => $fileInfo['nom_original'],
+                    'nom_stockage' => $fileInfo['nom_stockage'],
+                    'fichier' => $fileInfo['chemin'],
+                    'taille' => $fileInfo['taille'],
+                    'type_mime' => $fileInfo['type_mime'],
+                ]);
             }
         }
         
@@ -337,9 +386,9 @@ class PostulerController extends Controller
         // Utiliser input() avec des valeurs par défaut
         $paiementRequest = new Request([
             'dossier_id' => $dossier->id,
-            'montant' => 7500,
+            'montant' => 200,
             'mode' => $validatedData['mode_paiement'],
-            'fullName' => $validatedData['nom'],
+            'fullName' => trim($validatedData['nom'] . ' ' . $validatedData['prenom']),
             'email' => $validatedData['email'],
             'telephone' => $validatedData['telephone']
         ]);
@@ -384,6 +433,40 @@ class PostulerController extends Controller
         throw new \Exception('Réponse inattendue du module de paiement.');
     }
     
+    /**
+     * Formater le numéro de téléphone pour l'envoi de SMS
+     *
+     * @param string $telephone
+     * @return string
+     */
+    private function formatPhoneNumberForSMS($telephone)
+    {
+        if (empty($telephone)) {
+            return '';
+        }
+        
+        // Supprimer tous les caractères non numériques
+        $telephone = preg_replace('/[^0-9]/', '', $telephone);
+        
+        // Si le numéro commence par +242, retirer le +
+        if (strpos($telephone, '242') === 0) {
+            return $telephone;
+        }
+        
+        // Si le numéro commence par 00242, retirer les 00
+        if (strpos($telephone, '00242') === 0) {
+            return substr($telephone, 2);
+        }
+        
+        // Si le numéro commence par 05, 06 ou 04, ajouter 242 au début
+        if (strpos($telephone, '05') === 0 || strpos($telephone, '06') === 0 || strpos($telephone, '04') === 0) {
+            return '242' . $telephone;
+        }
+        
+        // Pour tout autre format, retourner le numéro tel quel
+        return $telephone;
+    }
+    
     private function finalizeCandidature($dossier)
     {
         // 1. Créer le compte étudiant avec les informations du dossier
@@ -391,6 +474,7 @@ class PostulerController extends Controller
         
         $etudiant = Etudiant::create([
             'nom' => $dossier->nom,
+            'prenom' => $dossier->prenom ?? '',
             'email' => $dossier->email,
             'telephone' => $dossier->telephone,
             'password' => Hash::make($motDePasse),
@@ -401,7 +485,7 @@ class PostulerController extends Controller
             'niveau_etude' => $dossier->niveau_etude,
             'moyenne' => $dossier->cas_social ? null : $dossier->moyenne,
             'cas_social' => $dossier->cas_social,
-            'photo' => $dossier->photo_identite,
+            'photo_identite' => $dossier->photo_identite,
         ]);
         
         // Assigner le rôle étudiant (Spatie)
@@ -416,22 +500,126 @@ class PostulerController extends Controller
         
         // 3. Envoyer l'email de bienvenue à l'étudiant
         try {
-            $etudiant->notify(new BienvenuePostulerController($motDePasse));
+            Log::info('Tentative d\'envoi de l\'email de bienvenue', [
+                'etudiant_id' => $etudiant->id,
+                'email' => $this->maskEmail($etudiant->email),
+                'nom' => $this->maskName($etudiant->nom . ' ' . $etudiant->prenom),
+                'dossier_id' => $dossier->id,
+                'notification_class' => BienvenuePostulerController::class,
+                'implements_should_queue' => in_array(ShouldQueue::class, class_implements(BienvenuePostulerController::class))
+            ]);
+            
+            $notification = new BienvenuePostulerController($motDePasse);
+            $etudiant->notify($notification);
+            
+            Log::info('Email de bienvenue envoyé avec succès', [
+                'etudiant_id' => $etudiant->id,
+                'email' => $this->maskEmail($etudiant->email),
+                'notification_id' => $notification->id ?? null,
+                'queue_connection' => config('queue.default'),
+                'queue_name' => config('queue.connections.' . config('queue.default') . '.queue', 'default')
+            ]);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'envoi de l\'email de bienvenue', [
                 'etudiant_id' => $etudiant->id,
-                'error' => $e->getMessage()
+                'email' => $this->maskEmail($etudiant->email),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
         
         // 4. Notifier les agents responsables
         try {
             $agents = \App\Models\User::role('agent')->get();
+            $agentsCount = $agents->count();
+            
+            Log::info('Tentative d\'envoi des notifications aux agents', [
+                'dossier_id' => $dossier->id,
+                'agents_count' => $agentsCount,
+                'notification_class' => NouvelleCandidatureNotification::class,
+                'implements_should_queue' => in_array(ShouldQueue::class, class_implements(NouvelleCandidatureNotification::class))
+            ]);
+            
             Notification::send($agents, new NouvelleCandidatureNotification($dossier));
+            
+            Log::info('Notifications aux agents envoyées avec succès', [
+                'dossier_id' => $dossier->id,
+                'agents_notified' => $agentsCount,
+                'queue_connection' => config('queue.default'),
+                'queue_name' => config('queue.connections.' . config('queue.default') . '.queue', 'default')
+            ]);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'envoi des notifications aux agents', [
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
                 'dossier_id' => $dossier->id
+            ]);
+        }
+        
+        // 5. Envoyer un SMS de bienvenue à l'étudiant
+        try {
+            // Préparation du message SMS
+            $message = "Bienvenue au service de la DOBAS,\n\n";
+            $message .= "Nous vous remercions pour votre candidature. Votre dossier (N°" . $dossier->numero_dossier . ") ";
+            $message .= "sera traité avec attention et vous recevrez notre retour dans les plus brefs délais.\n\n";
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                Log::info('Tentative d\'envoi du SMS de bienvenue', [
+                    'etudiant_id' => $etudiant->id,
+                    'dossier_id' => $dossier->id,
+                    'telephone_original' => $this->maskSensitiveString($dossier->telephone),
+                    'telephone_formate' => $this->maskSensitiveString($formattedPhone),
+                    'message_length' => strlen($message),
+                    'sms_service' => 'MTN Tinda'
+                ]);
+                
+                // Envoyer le SMS via le service MTN Tinda
+                $smsResponse = $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+                
+                // Journaliser la réponse du service SMS
+                Log::info('SMS de bienvenue envoyé avec succès', [
+                    'etudiant_id' => $etudiant->id,
+                    'dossier_id' => $dossier->id,
+                    'telephone_original' => $this->maskSensitiveString($dossier->telephone),
+                    'telephone_formate' => $this->maskSensitiveString($formattedPhone),
+                    'response' => $smsResponse
+                ]);
+            } else {
+                Log::warning('Numéro de téléphone invalide, SMS non envoyé', [
+                    'etudiant_id' => $etudiant->id,
+                    'dossier_id' => $dossier->id,
+                    'telephone' => $dossier->telephone
+                ]);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'envoi du SMS de bienvenue', [
+                'etudiant_id' => $etudiant->id,
+                'dossier_id' => $dossier->id,
+                'telephone' => $this->maskSensitiveString($dossier->telephone),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }

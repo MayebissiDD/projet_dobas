@@ -57,7 +57,7 @@ class StatsController extends Controller
             'users'    => User::count(),
             'ecoles'   => Ecole::count(),
             'bourses'  => Bourse::count(),
-            'filieres' => Dossier::distinct('filiere')->count('filiere'),
+            'filieres' => Dossier::distinct('filiere_souhaitee')->count('filiere_souhaitee'),
         ];
 
         // --- Répartition par école ---
@@ -73,10 +73,10 @@ class StatsController extends Controller
             });
 
         // --- Répartition par filière ---
-        $parFiliere = Dossier::select('filiere', DB::raw('COUNT(*) as total'))
+        $parFiliere = Dossier::select('filiere_souhaitee', DB::raw('COUNT(*) as total'))
             ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
             ->when($request->filled('to'), fn($q) => $q->whereDate('created_at', '<=', $request->to))
-            ->groupBy('filiere')
+            ->groupBy('filiere_souhaitee')
             ->get();
 
         // --- Évolution par mois ---

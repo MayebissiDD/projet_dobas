@@ -1,0 +1,303 @@
+[
+  {
+    "nom": "ESCAT - École Supérieure de Commerce, d'Administration et de Technologie",
+    "promoteur": "Privé",
+    "contacts": null,
+    "capacite": null,
+    "adresse": "Brazzaville",
+    "autres": null,
+    "logo": null,
+    "type_bourse": "locale",
+    "ville": "Brazzaville",
+    "pays": "Congo",
+    "filieres": [
+      {
+        "nom": "Audiovisuel Infographie",
+        "description": "Formation aux techniques audiovisuelles et à l'infographie",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Banque Assurance",
+        "description": "Formation aux métiers de la banque et de l'assurance",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Comptabilité Finance",
+        "description": "Formation en comptabilité et gestion financière",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Électrotechnique",
+        "description": "Formation aux techniques d'électrotechnique",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Gestion Commerciale",
+        "description": "Formation en gestion et techniques commerciales",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Informatique Réseaux",
+        "description": "Formation en informatique et réseaux",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Logistique Transport",
+        "description": "Formation en logistique et gestion des transports",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Maintenance Industrielle",
+        "description": "Formation à la maintenance industrielle",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Ressources Humaines",
+        "description": "Formation en gestion des ressources humaines",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Transit Commerce",
+        "description": "Formation en transit et commerce international",
+        "niveau": ["BTS"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Électricité",
+        "description": "Formation aux métiers de l'électricité",
+        "niveau": ["CAP"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Froid Climatisation",
+        "description": "Formation en froid et climatisation",
+        "niveau": ["CAP"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Maintenance Industrielle CAP",
+        "description": "Formation à la maintenance industrielle (CAP)",
+        "niveau": ["CAP"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Marketing Vente",
+        "description": "Formation en marketing et techniques de vente",
+        "niveau": ["CAP"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Réseaux Informatique",
+        "description": "Formation en réseaux informatiques",
+        "niveau": ["CAP"],
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Électricité Industrielle",
+        "description": "Formation en électricité industrielle",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Électro Mécanique Maintenance",
+        "description": "Formation en électromécanique et maintenance",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Génie Informatique Réseaux",
+        "description": "Formation en génie informatique et réseaux",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Gestion Commerciale Licence",
+        "description": "Formation en gestion commerciale (Licence)",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Gestion Financière",
+        "description": "Formation en gestion financière",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Informatique de Gestion",
+        "description": "Gestion des SI, développement et pilotage des processus informatiques orientés gestion",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Intelligence Artificielle",
+        "description": "Formation en intelligence artificielle",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Mécanique Maintenance Industrielle",
+        "description": "Formation en mécanique et maintenance industrielle",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Réseaux Télécommunications",
+        "description": "Administration systèmes & réseaux, infrastructures et services",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Ressources Humaines Licence",
+        "description": "Formation en gestion des ressources humaines (Licence)",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Administration Entreprises",
+        "description": "Formation en administration des entreprises",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Ingénierie Commerciale",
+        "description": "Formation en ingénierie commerciale",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Ingénierie Financière",
+        "description": "Formation en ingénierie financière",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Management RH",
+        "description": "Formation en management des ressources humaines",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Réseaux Télécoms",
+        "description": "Formation en réseaux et télécommunications",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      },
+      {
+        "nom": "Systèmes Information",
+        "description": "Formation en systèmes d'information",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      }
+    ]
+  },
+  {
+    "nom": "EAD Congo - École Africaine de Développement",
+    "promoteur": "Privé",
+    "contacts": null,
+    "capacite": null,
+    "adresse": "Brazzaville",
+    "autres": null,
+    "logo": null,
+    "type_bourse": "locale",
+    "ville": "Brazzaville",
+    "pays": "Congo",
+    "filieres": [
+      {
+        "nom": "Gestion des Projets",
+        "description": "Méthodes et outils de conduite de projet, planification et suivi-évaluation.",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Marketing & Communication",
+        "description": "Stratégies marketing, communication digitale et corporate.",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Comptabilité & Finance",
+        "description": "Comptabilité générale, analytique et finance d'entreprise.",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      }
+    ]
+  },
+  {
+    "nom": "Institut International 2i",
+    "promoteur": "Privé",
+    "contacts": null,
+    "capacite": null,
+    "adresse": "Brazzaville",
+    "autres": null,
+    "logo": null,
+    "type_bourse": "etrangere",
+    "ville": "Brazzaville",
+    "pays": "Congo",
+    "filieres": [
+      {
+        "nom": "Génie Logiciel",
+        "description": "Conception et développement d'applications, génie logiciel.",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Réseaux, Systèmes & Sécurité",
+        "description": "Administration réseau, systèmes, cybersécurité.",
+        "niveau": { "type": "licence", "from": 1, "to": 3 },
+        "duree": 3,
+        "active": true
+      },
+      {
+        "nom": "Management des Systèmes d'Information",
+        "description": "Gouvernance et pilotage des SI.",
+        "niveau": { "type": "master", "from": 1, "to": 2 },
+        "duree": 2,
+        "active": true
+      }
+    ]
+  }
+]

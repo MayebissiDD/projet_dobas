@@ -11,8 +11,15 @@ class Ecole extends Model
 
     protected $fillable = [
         'nom',
-        'ville',
+        'promoteur',
+        'contacts',
         'capacite',
+        'adresse',
+        'autres',
+        'logo',
+        'type_bourse', 
+        'ville',       
+        'pays',
     ];
 
     /**

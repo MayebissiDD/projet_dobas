@@ -10,34 +10,39 @@ class DossierPiece extends Model
     
     protected $fillable = [
         'dossier_id',
-        'type_piece',
+        'piece_id',
+        'fichier', // Utiliser 'fichier' au lieu de 'chemin'
         'nom_original',
         'nom_stockage',
-        'chemin',
-        'taille',
         'type_mime',
+        'taille',
     ];
-
+    
     public function dossier(): BelongsTo
     {
         return $this->belongsTo(Dossier::class);
     }
-
-    // Accès direct au nom de la pièce (helper)
+    
+    public function piece(): BelongsTo
+    {
+        return $this->belongsTo(Piece::class);
+    }
+    
+    // Accès direct au nom de la pièce
     public function getNomPieceAttribute()
     {
-        return $this->type_piece;
+        return $this->piece ? $this->piece->nom : 'Pièce inconnue';
     }
-
-    // Accès direct au chemin du fichier (helper)
+    
+    // URL pour accéder au fichier
     public function getUrlFichierAttribute()
     {
-        return $this->chemin ? url('storage/' . $this->chemin) : null;
+        return $this->fichier ? asset('storage/' . $this->fichier) : null;
     }
-
-    // Helper pour affichage dans les vues (nom complet)
+    
+    // Helper pour affichage dans les vues
     public function getLabelAttribute()
     {
-        return $this->nom_piece . ' (' . basename($this->chemin) . ')';
+        return $this->nom_piece . ' (' . basename($this->fichier) . ')';
     }
 }

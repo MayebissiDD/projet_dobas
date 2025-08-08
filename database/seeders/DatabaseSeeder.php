@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RolepermissionSeeder::class,
             EcoleSeeder::class,
             BourseSeeder::class,
+            PieceSeeder::class,
         ]);
     }
 }

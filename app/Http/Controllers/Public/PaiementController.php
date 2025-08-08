@@ -59,7 +59,7 @@ class PaiementController extends Controller
                 ? $this->initiateMobileMoney($paiement, $request)
                 : $this->initiateCardPayment($paiement, $request);
             
-            // ✅ Vérifie bien que $response est un tableau valide
+            // Vérifie bien que $response est un tableau valide
             if (is_array($response) && !empty($response['success']) && !empty($response['payment_url'])) {
                 DB::commit();
                 
@@ -69,11 +69,11 @@ class PaiementController extends Controller
                 return response()->json([
                     'success' => true,
                     'link' => $response['payment_url'],
-                    'transaction_id' => $transactionId  // Correction : ajouter le transaction_id dans la réponse
+                    'transaction_id' => $transactionId
                 ]);
             }
             
-            // ❌ En cas d'erreur inattendue
+            // En cas d'erreur inattendue
             Log::error('Réponse inattendue du service de paiement', [
                 'mode' => $request->mode,
                 'response' => $response,
@@ -109,73 +109,73 @@ class PaiementController extends Controller
         return response()->json(['success' => true]);
     }
     
-  /**
- * Initier paiement Mobile Money via Lygos
- */
-private function initiateMobileMoney($paiement, $request)
-{
-    try {
-        // Générer un token unique pour cette transaction
-        $token = hash('sha256', $paiement->id . time() . random_bytes(16));
-        
-        // Sauvegarder ce token dans la base de données pour pouvoir le vérifier plus tard
-        $paiement->update([
-            'token_verification' => $token
-        ]);
-        
-        // Créer les URLs de retour avec les paramètres personnalisés
-        $successUrl = route('paiement.lygos.return') . '?token=' . $token . '&status=success&paiement_id=' . $paiement->id;
-        $failureUrl = route('paiement.lygos.cancel') . '?token=' . $token . '&status=failed&paiement_id=' . $paiement->id;
-        
-        $paymentData = [
-            'amount' => $paiement->montant,
-            'phone' => $request->telephone,
-            'email' => $request->email,
-            'fullName' => $request->fullName,
-            'reference' => $paiement->reference,
-            'callback_url' => route('paiement.lygos.callback'),
-            'success_url' => $successUrl,     // URL de succès avec paramètres
-            'failure_url' => $failureUrl,     // URL d'échec avec paramètres
-            'shop_name' => env('DIB-Business', 'MyApp')
-        ];
-        
-        $response = $this->lygosService->createPayment($paymentData);
-        
-        if (!empty($response['success']) && $response['success']) {
-            // Correction : s'assurer que le transaction_id est bien enregistré
-            $transactionId = $response['order_id'] ?? null;
+    /**
+     * Initier paiement Mobile Money via Lygos
+     */
+    private function initiateMobileMoney($paiement, $request)
+    {
+        try {
+            // Générer un token unique pour cette transaction
+            $token = hash('sha256', $paiement->id . time() . random_bytes(16));
             
+            // Sauvegarder ce token dans la base de données pour pouvoir le vérifier plus tard
             $paiement->update([
-                'transaction_id' => $transactionId,
-                'statut' => 'en_cours'
+                'token_verification' => $token
             ]);
             
-            // Correction : retourner également le transaction_id
-            return [
-                'success' => true,
-                'payment_url' => $response['payment_url'],
-                'transaction_id' => $transactionId
+            // Créer les URLs de retour avec les paramètres personnalisés
+            $successUrl = route('paiement.lygos.return') . '?token=' . $token . '&status=success&paiement_id=' . $paiement->id;
+            $failureUrl = route('paiement.lygos.cancel') . '?token=' . $token . '&status=failed&paiement_id=' . $paiement->id;
+            
+            $paymentData = [
+                'amount' => $paiement->montant,
+                'phone' => $request->telephone,
+                'email' => $request->email,
+                'fullName' => $request->fullName,
+                'reference' => $paiement->reference,
+                'callback_url' => route('paiement.lygos.callback'),
+                'success_url' => $successUrl,     // URL de succès avec paramètres
+                'failure_url' => $failureUrl,     // URL d'échec avec paramètres
+                'shop_name' => env('DIB-Business', 'MyApp')
             ];
+            
+            $response = $this->lygosService->createPayment($paymentData);
+            
+            if (!empty($response['success']) && $response['success']) {
+                // Correction : s'assurer que le transaction_id est bien enregistré
+                $transactionId = $response['order_id'] ?? null;
+                
+                $paiement->update([
+                    'transaction_id' => $transactionId,
+                    'statut' => 'en_cours'
+                ]);
+                
+                // Correction : retourner également le transaction_id
+                return [
+                    'success' => true,
+                    'payment_url' => $response['payment_url'],
+                    'transaction_id' => $transactionId
+                ];
+            }
+            
+            Log::error('Échec initiation paiement Mobile Money', [
+                'paiement_id' => $paiement->id,
+                'response' => $response
+            ]);
+            
+            throw new \Exception($response['message'] ?? 'Erreur Lygos');
+        } catch (\Exception $e) {
+            $paiement->update(['statut' => 'echec']);
+            
+            Log::error('Exception initiation paiement Mobile Money', [
+                'paiement_id' => $paiement->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw $e;
         }
-        
-        Log::error('Échec initiation paiement Mobile Money', [
-            'paiement_id' => $paiement->id,
-            'response' => $response
-        ]);
-        
-        throw new \Exception($response['message'] ?? 'Erreur Lygos');
-    } catch (\Exception $e) {
-        $paiement->update(['statut' => 'echec']);
-        
-        Log::error('Exception initiation paiement Mobile Money', [
-            'paiement_id' => $paiement->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        throw $e;
     }
-}
     
     /**
      * Initier paiement par carte via Stripe
@@ -205,7 +205,7 @@ private function initiateMobileMoney($paiement, $request)
                 return [
                     'success' => true,
                     'payment_url' => $response['checkout_url'],
-                    'transaction_id' => $response['session_id'] // Correction : ajouter le transaction_id
+                    'transaction_id' => $response['session_id']
                 ];
             }
             
@@ -256,168 +256,169 @@ private function initiateMobileMoney($paiement, $request)
         return redirect()->route('candidature.index')->with('error', 'Paiement annulé');
     }
     
-  public function lygosReturn(Request $request)
-{
-    // Récupérer tous les paramètres de l'URL pour le débogage
-    $allParams = $request->query();
-    
-    Log::info('Début du traitement du retour Lygos (succès)', [
-        'all_params' => $allParams,
-        'url' => $request->fullUrl()
-    ]);
-    
-    // Récupérer les paramètres personnalisés
-    $token = $request->query('token');
-    $status = $request->query('status');
-    $paiementId = $request->query('paiement_id');
-    
-    // Vérifier que nous avons tous les paramètres nécessaires
-    if (!$token || !$status || !$paiementId) {
-        Log::error('Paramètres manquants dans le retour Lygos', [
-            'token' => $token,
-            'status' => $status,
-            'paiement_id' => $paiementId
+    public function lygosReturn(Request $request)
+    {
+        // Récupérer tous les paramètres de l'URL pour le débogage
+        $allParams = $request->query();
+        
+        Log::info('Début du traitement du retour Lygos (succès)', [
+            'all_params' => $allParams,
+            'url' => $request->fullUrl()
         ]);
         
-        return redirect()->route('candidature.index', ['error' => 'Paramètres de vérification manquants']);
-    }
-    
-    // Vérifier que le paiement existe et que le token est valide
-    $paiement = Paiement::find($paiementId);
-    
-    if (!$paiement || $paiement->token_verification !== $token) {
-        Log::error('Token de vérification invalide ou paiement non trouvé', [
-            'paiement_id' => $paiementId,
-            'token_found' => $token,
-            'token_expected' => $paiement ? $paiement->token_verification : 'N/A'
-        ]);
+        // Récupérer les paramètres personnalisés
+        $token = $request->query('token');
+        $status = $request->query('status');
+        $paiementId = $request->query('paiement_id');
         
-        return redirect()->route('candidature.index', ['error' => 'Information de paiement invalide']);
-    }
-    
-    Log::info('Token de vérification valide, traitement du paiement', [
-        'paiement_id' => $paiementId,
-        'status' => $status
-    ]);
-    
-    // Si le statut est "success", on vérifie le statut réel auprès de Lygos
-    if ($status === 'success') {
-        try {
-            $transactionId = $paiement->transaction_id;
-            
-            if ($transactionId) {
-                Log::info('Vérification du statut de la transaction auprès de Lygos', ['transaction_id' => $transactionId]);
-                
-                $lygosStatus = $this->lygosService->checkTransactionStatus($transactionId);
-                
-                Log::info('Statut de la transaction reçu de Lygos', [
-                    'transaction_id' => $transactionId,
-                    'status_response' => $lygosStatus
-                ]);
-                
-                if ($lygosStatus && isset($lygosStatus['status']) && $lygosStatus['status'] === 'success') {
-                    Log::info('Paiement confirmé comme réussi', ['transaction_id' => $transactionId]);
-                    
-                    $this->markPaymentAsSuccessful($paiement);
-                    
-                    Log::info('Redirection vers la page de confirmation', ['success' => 1]);
-                    return redirect()->route('candidature.confirmation', ['success' => 1]);
-                }
-            }
-            
-            // Si on ne peut pas vérifier auprès de Lygos, on fait confiance à notre paramètre
-            Log::warning('Impossible de vérifier le statut auprès de Lygos, utilisation du paramètre local', [
+        // Vérifier que nous avons tous les paramètres nécessaires
+        if (!$token || !$status || !$paiementId) {
+            Log::error('Paramètres manquants dans le retour Lygos', [
+                'token' => $token,
+                'status' => $status,
                 'paiement_id' => $paiementId
             ]);
             
-            $this->markPaymentAsSuccessful($paiement);
-            
-            return redirect()->route('candidature.confirmation', ['success' => 1]);
-            
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de la vérification du statut Lygos', [
+            return redirect()->route('candidature.index', ['error' => 'Paramètres de vérification manquants']);
+        }
+        
+        // Vérifier que le paiement existe et que le token est valide
+        $paiement = Paiement::find($paiementId);
+        
+        if (!$paiement || $paiement->token_verification !== $token) {
+            Log::error('Token de vérification invalide ou paiement non trouvé', [
                 'paiement_id' => $paiementId,
-                'error' => $e->getMessage()
+                'token_found' => $token,
+                'token_expected' => $paiement ? $paiement->token_verification : 'N/A'
             ]);
             
-            // En cas d'erreur, on fait confiance à notre paramètre
-            $this->markPaymentAsSuccessful($paiement);
-            
-            return redirect()->route('candidature.confirmation', ['success' => 1]);
+            return redirect()->route('candidature.index', ['error' => 'Information de paiement invalide']);
         }
+        
+        Log::info('Token de vérification valide, traitement du paiement', [
+            'paiement_id' => $paiementId,
+            'status' => $status
+        ]);
+        
+        // Si le statut est "success", on vérifie le statut réel auprès de Lygos
+        if ($status === 'success') {
+            try {
+                $transactionId = $paiement->transaction_id;
+                
+                Log::info('transaction ', ['transaction_id' => $transactionId]);
+                if ($transactionId) {
+                    Log::info('Vérification du statut de la transaction auprès de Lygos', ['transaction_id' => $transactionId]);
+                    
+                    $lygosStatus = $this->lygosService->checkTransactionStatus($transactionId);
+                    
+                    Log::info('Statut de la transaction reçu de Lygos', [
+                        'transaction_id' => $transactionId,
+                        'status_response' => $lygosStatus
+                    ]);
+                    
+                    if ($lygosStatus && isset($lygosStatus['status']) && $lygosStatus['status'] === 'success') {
+                        Log::info('Paiement confirmé comme réussi', ['transaction_id' => $transactionId]);
+                        
+                        $this->markPaymentAsSuccessful($paiement);
+                        
+                        Log::info('Redirection vers la page de confirmation', ['success' => 1]);
+                        return redirect()->route('candidature.confirmation', ['success' => 1]);
+                    }
+                }
+                
+                // Si on ne peut pas vérifier auprès de Lygos, on fait confiance à notre paramètre
+                Log::warning('Impossible de vérifier le statut auprès de Lygos, utilisation du paramètre local', [
+                    'paiement_id' => $paiementId
+                ]);
+                
+                $this->markPaymentAsSuccessful($paiement);
+                
+                return redirect()->route('candidature.confirmation', ['success' => 1]);
+                
+            } catch (\Exception $e) {
+                Log::error('Erreur lors de la vérification du statut Lygos', [
+                    'paiement_id' => $paiementId,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // En cas d'erreur, on fait confiance à notre paramètre
+                $this->markPaymentAsSuccessful($paiement);
+                
+                return redirect()->route('candidature.confirmation', ['success' => 1,'payment_status' => 'success']);
+            }
+        }
+        
+        // Si le statut est "failed", on marque le paiement comme échoué
+        Log::info('Paiement marqué comme échoué', ['paiement_id' => $paiementId]);
+        
+        $paiement->update([
+            'statut' => 'echec',
+            'details' => array_merge($paiement->details ?? [], [
+                'message_erreur' => 'Paiement échoué',
+                'date_echec' => now()
+            ])
+        ]);
+        
+        return redirect()->route('candidature.index', ['error' => 'Paiement échoué']);
     }
-    
-    // Si le statut est "failed", on marque le paiement comme échoué
-    Log::info('Paiement marqué comme échoué', ['paiement_id' => $paiementId]);
-    
-    $paiement->update([
-        'statut' => 'echec',
-        'details' => array_merge($paiement->details ?? [], [
-            'message_erreur' => 'Paiement échoué',
-            'date_echec' => now()
-        ])
-    ]);
-    
-    return redirect()->route('candidature.index', ['error' => 'Paiement échoué']);
-}
 
     public function lygosCancel(Request $request)
-{
-    // Récupérer tous les paramètres de l'URL pour le débogage
-    $allParams = $request->query();
-    
-    Log::info('Début du traitement du retour Lygos (annulation)', [
-        'all_params' => $allParams,
-        'url' => $request->fullUrl()
-    ]);
-    
-    // Récupérer les paramètres personnalisés
-    $token = $request->query('token');
-    $status = $request->query('status');
-    $paiementId = $request->query('paiement_id');
-    
-    // Vérifier que nous avons tous les paramètres nécessaires
-    if (!$token || !$status || !$paiementId) {
-        Log::error('Paramètres manquants dans le retour Lygos', [
-            'token' => $token,
-            'status' => $status,
-            'paiement_id' => $paiementId
+    {
+        // Récupérer tous les paramètres de l'URL pour le débogage
+        $allParams = $request->query();
+        
+        Log::info('Début du traitement du retour Lygos (annulation)', [
+            'all_params' => $allParams,
+            'url' => $request->fullUrl()
         ]);
         
-        return redirect()->route('candidature.index', ['error' => 'Paramètres de vérification manquants']);
-    }
-    
-    // Vérifier que le paiement existe et que le token est valide
-    $paiement = Paiement::find($paiementId);
-    
-    if (!$paiement || $paiement->token_verification !== $token) {
-        Log::error('Token de vérification invalide ou paiement non trouvé', [
+        // Récupérer les paramètres personnalisés
+        $token = $request->query('token');
+        $status = $request->query('status');
+        $paiementId = $request->query('paiement_id');
+        
+        // Vérifier que nous avons tous les paramètres nécessaires
+        if (!$token || !$status || !$paiementId) {
+            Log::error('Paramètres manquants dans le retour Lygos', [
+                'token' => $token,
+                'status' => $status,
+                'paiement_id' => $paiementId
+            ]);
+            
+            return redirect()->route('candidature.index', ['error' => 'Paramètres de vérification manquants']);
+        }
+        
+        // Vérifier que le paiement existe et que le token est valide
+        $paiement = Paiement::find($paiementId);
+        
+        if (!$paiement || $paiement->token_verification !== $token) {
+            Log::error('Token de vérification invalide ou paiement non trouvé', [
+                'paiement_id' => $paiementId,
+                'token_found' => $token,
+                'token_expected' => $paiement ? $paiement->token_verification : 'N/A'
+            ]);
+            
+            return redirect()->route('candidature.index', ['error' => 'Information de paiement invalide']);
+        }
+        
+        Log::info('Token de vérification valide, traitement du paiement', [
             'paiement_id' => $paiementId,
-            'token_found' => $token,
-            'token_expected' => $paiement ? $paiement->token_verification : 'N/A'
+            'status' => $status
         ]);
         
-        return redirect()->route('candidature.index', ['error' => 'Information de paiement invalide']);
+        // Marquer le paiement comme annulé
+        Log::info('Paiement marqué comme annulé', ['paiement_id' => $paiementId]);
+        
+        $paiement->update([
+            'statut' => 'echec',
+            'details' => array_merge($paiement->details ?? [], [
+                'message_erreur' => 'Paiement annulé par l\'utilisateur',
+                'date_annulation' => now()
+            ])
+        ]);
+        
+        return redirect()->route('candidature.index', ['error' => 'Paiement annulé']);
     }
-    
-    Log::info('Token de vérification valide, traitement du paiement', [
-        'paiement_id' => $paiementId,
-        'status' => $status
-    ]);
-    
-    // Marquer le paiement comme annulé
-    Log::info('Paiement marqué comme annulé', ['paiement_id' => $paiementId]);
-    
-    $paiement->update([
-        'statut' => 'echec',
-        'details' => array_merge($paiement->details ?? [], [
-            'message_erreur' => 'Paiement annulé par l\'utilisateur',
-            'date_annulation' => now()
-        ])
-    ]);
-    
-    return redirect()->route('candidature.index', ['error' => 'Paiement annulé']);
-}
         
     /**
      * Webhook Lygos
@@ -531,7 +532,8 @@ private function initiateMobileMoney($paiement, $request)
             ]);
             
             // Finaliser la candidature si nécessaire
-            $postulerController = new \App\Http\Controllers\Public\PostulerController();
+            // Utiliser l'injection de dépendances au lieu d'instancier directement
+            $postulerController = app(\App\Http\Controllers\Public\PostulerController::class);
             $postulerController->handlePaymentSuccess(new Request([
                 'dossier_id' => $paiement->dossier_id,
                 'paiement_id' => $paiement->id
