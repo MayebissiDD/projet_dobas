@@ -96,6 +96,7 @@ Route::prefix('paiement')->name('paiement.')->group(function () {
 Route::prefix('api')->group(function () {
     Route::get('/bourses', [BourseController::class, 'apiList']);
     Route::get('/ecoles', [EcoleController::class, 'apiList']);
+    Route::get('/etablissements', [EcoleController::class, 'apiEtablissements']);
     Route::get('/filieres', fn() => response()->json(['filieres' => \App\Models\Filiere::all()]));
     Route::get('/pieces', fn() => response()->json(['pieces' => \App\Models\Piece::all()]));
 

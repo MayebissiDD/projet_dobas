@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ class Filiere extends Model
         'nom',
         'ecole_id',
         'description',
-        'niveau',
+        'niveau', // Maintenant de type JSON
         'duree',
         'active',
     ];
@@ -22,6 +23,7 @@ class Filiere extends Model
     protected $casts = [
         'active' => 'boolean',
         'duree' => 'integer',
+        'niveau' => 'array', // Cast automatique en tableau PHP
     ];
 
     /**
@@ -38,5 +40,13 @@ class Filiere extends Model
     public function dossiers(): HasMany
     {
         return $this->hasMany(Dossier::class);
+    }
+
+    /**
+     * Accesseur pour formater les niveaux
+     */
+    public function getNiveauxListAttribute(): string
+    {
+        return implode(', ', $this->niveau ?? []);
     }
 }

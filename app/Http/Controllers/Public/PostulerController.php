@@ -190,6 +190,7 @@ class PostulerController extends Controller
     {
         $rules = [
             // Étape 1 - Identification
+            'nationalite' => 'required|string|max:255',
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'date_naissance' => 'required|date|before:today',
@@ -213,6 +214,7 @@ class PostulerController extends Controller
             'etablissement' => 'required|string|max:255',
             'pays_souhaite' => 'required_if:type_bourse,étrangère|nullable|string|max:255',
             'filiere_souhaitee' => 'nullable|string|max:255',
+            // 'niveau_vise' => 'required|string|max:255',
             // Étape 4 - Paiement
             'mode_paiement' => 'required|in:mobile_money,carte,depot_physique',
             'certification' => 'required|accepted'
@@ -238,12 +240,22 @@ class PostulerController extends Controller
      */
     private function createDossier($validatedData, $filesData, Request $request)
     {
+        // Récupérer les IDs de l'école et de la filière si nécessaire
+        $ecole = Ecole::where('nom', $validatedData['etablissement'])->first();
+        $filiere = null;
+        
+        if ($ecole && isset($validatedData['filiere_souhaitee'])) {
+            $filiere = Filiere::where('nom', $validatedData['filiere_souhaitee'])
+                ->where('ecole_id', $ecole->id)
+                ->first();
+        }
+        
         // Créer le dossier principal avec les informations de l'étudiant
         $dossierData = [
             'etudiant_id' => null, // Sera mis à jour après création de l'étudiant
-            'bourse_id' => $validatedData['bourse_id'] ?? null,
-            'ecole_id' => $validatedData['ecole_id'] ?? null,
-            'filiere_id' => $validatedData['filiere_id'] ?? null,
+            'bourse_id' => null, // Sera mis à jour plus tard si nécessaire
+            'ecole_id' => $ecole ? $ecole->id : null,
+            'filiere_id' => $filiere ? $filiere->id : null,
             'statut' => 'en_attente',
             'statut_paiement' => $validatedData['mode_paiement'] === 'depot_physique' ? 'en_attente' : 'non_paye',
             'numero_dossier' => 'DOBAS-' . date('Y') . '-' . str_pad(Dossier::count() + 1, 6, '0', STR_PAD_LEFT),
@@ -251,10 +263,12 @@ class PostulerController extends Controller
             'etablissement' => $validatedData['etablissement'],
             'pays_souhaite' => $request->input('pays_souhaite', null),
             'filiere_souhaitee' => $request->input('filiere_souhaitee', null),
+            'niveau_vise' => $request->input('niveau_vise', null),
             'mode_paiement' => $validatedData['mode_paiement'],
             'cas_social' => $validatedData['cas_social'] ?? false,
             'moyenne' => $validatedData['cas_social'] ? null : ($validatedData['moyenne'] ?? null),
             'niveau_etude' => $validatedData['niveau_etude'],
+            'nationalite' => $validatedData['nationalite'],
             // Informations de l'étudiant
             'nom' => $validatedData['nom'],
             'prenom' => $validatedData['prenom'] ?? '',
@@ -289,7 +303,7 @@ class PostulerController extends Controller
                     'piece_id' => $piece->id,
                     'nom_original' => $fileInfo['nom_original'],
                     'nom_stockage' => $fileInfo['nom_stockage'],
-                    'fichier' => $fileInfo['chemin'], // Utiliser 'fichier' au lieu de 'chemin'
+                    'fichier' => $fileInfo['chemin'],
                     'taille' => $fileInfo['taille'],
                     'type_mime' => $fileInfo['type_mime'],
                 ]);

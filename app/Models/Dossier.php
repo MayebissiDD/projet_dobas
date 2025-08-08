@@ -29,6 +29,8 @@ class Dossier extends Model
         'cas_social',
         'moyenne',
         'niveau_etude',
+        'nationalite',
+        'niveau_vise',
         'date_naissance',
         'lieu_naissance',
         'sexe',

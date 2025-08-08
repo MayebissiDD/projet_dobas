@@ -16,7 +16,7 @@ import EtapePaiement from "../../Components/Public/EtapePaiement";
 
 export default function Postuler() {
   const { url, success: initialSuccess, error: initialError, paymentStatus: initialPaymentStatus } = usePage();
-  
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     nationalite: "Congolaise",
@@ -41,26 +41,27 @@ export default function Postuler() {
     etablissement: "",
     pays_souhaite: "",
     filiere_souhaitee: "",
+    niveau_vise: "",
     mode_paiement: "",
     passeport: null,
     preuve_paiement: null,
     certification: false
   });
-  
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paiementSuccess, setPaiementSuccess] = useState(false);
   const [paiementError, setPaiementError] = useState(false);
   const [paiementMessage, setPaiementMessage] = useState("");
-  
+
   // États pour la gestion du lien de paiement et des tentatives
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRY_ATTEMPTS = 3; // Limiter à 3 tentatives
-  
+
   // Données dynamiques pour les selects
   const [bourses, setBourses] = useState([]);
   const [etablissements, setEtablissements] = useState([]);
-  
+
   // Détecter le statut du paiement via query params ou props
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -77,18 +78,19 @@ export default function Postuler() {
       console.log("Erreur de paiement détectée:", error);
       setPaiementError(true);
       setPaiementMessage(error);
-      
+
       const savedRetryCount = localStorage.getItem('paymentRetryCount');
       if (savedRetryCount) {
         setRetryCount(parseInt(savedRetryCount));
       }
     }
   }, [initialSuccess, initialError, initialPaymentStatus]);
-  
+
+  // Charger données dynamiques
   // Charger données dynamiques
   useEffect(() => {
     console.log("Chargement des données dynamiques (bourses et établissements)");
-    
+
     const loadData = async () => {
       try {
         console.log("Récupération des données depuis les API");
@@ -96,36 +98,60 @@ export default function Postuler() {
           fetch('/api/bourses'),
           fetch('/api/etablissements')
         ]);
-        
+
         console.log("Réponses reçues:", {
           boursesStatus: boursesRes.status,
           etablissementsStatus: etablissementsRes.status
         });
-        
+
         const boursesData = await boursesRes.json();
         const etablissementsData = await etablissementsRes.json();
-        
+
         console.log("Données décodées:", {
           boursesCount: boursesData.bourses?.length || 0,
           etablissementsCount: etablissementsData.etablissements?.length || 0
         });
-        
+
+        // Afficher la liste complète des établissements avec leurs filières
+        console.log("=== LISTE DES ÉTABLISSEMENTS ET FILIÈRES ===");
+        if (etablissementsData.etablissements && etablissementsData.etablissements.length > 0) {
+          etablissementsData.etablissements.forEach((etab, index) => {
+            console.log(`Établissement ${index + 1}:`, {
+              nom: etab.nom,
+              type: etab.type,
+              localisation: etab.localisation
+            });
+
+            // Afficher les filières si elles existent
+            if (etab.filieres && etab.filieres.length > 0) {
+              console.log(`  Filières pour ${etab.nom}:`);
+              etab.filieres.forEach((filiere, fIndex) => {
+                console.log(`    ${fIndex + 1}. ${filiere.nom} - ${filiere.description || 'Pas de description'}`);
+              });
+            } else {
+              console.log(`  Aucune filière trouvée pour ${etab.nom}`);
+            }
+          });
+        } else {
+          console.log("Aucun établissement trouvé");
+        }
+
         setBourses(boursesData.bourses || []);
         setEtablissements(etablissementsData.etablissements || []);
-        
+
         console.log("Données chargées avec succès");
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
       }
     };
-    
+
     loadData();
   }, []);
-  
+
   // Sauvegarde progressive dans le localStorage (sans les fichiers)
   useEffect(() => {
     console.log("Sauvegarde des données du formulaire dans localStorage");
-    
+
     const formDataToSave = { ...formData };
     const fileFields = [
       'photo_identite',
@@ -137,26 +163,26 @@ export default function Postuler() {
       'passeport',
       'preuve_paiement'
     ];
-    
+
     fileFields.forEach(field => {
       delete formDataToSave[field];
     });
-    
+
     console.log("Données sauvegardées (sans fichiers):", Object.keys(formDataToSave));
     localStorage.setItem('postulerFormData', JSON.stringify(formDataToSave));
   }, [formData]);
-  
+
   // Restaurer les données au chargement
   useEffect(() => {
     console.log("Restauration des données depuis localStorage");
-    
+
     const saved = localStorage.getItem('postulerFormData');
     if (saved) {
       const savedData = JSON.parse(saved);
       console.log("Données restaurées:", Object.keys(savedData));
-      setFormData({ 
-        ...formData, 
-        ...savedData, 
+      setFormData({
+        ...formData,
+        ...savedData,
         nationalite: "Congolaise",
         prenom: savedData.prenom || "" // Assurer que prénom est bien restauré
       });
@@ -165,13 +191,13 @@ export default function Postuler() {
       console.log("Aucune donnée sauvegardée trouvée");
     }
   }, []);
-  
+
   // Mise à jour des données du formulaire
   const updateFormData = (newData) => {
     console.log("Mise à jour des données du formulaire:", Object.keys(newData));
     setFormData(prev => ({ ...prev, ...newData }));
   };
-  
+
   // Fonction pour réinitialiser les états de paiement
   const resetPaymentStates = () => {
     console.log("Réinitialisation des états de paiement");
@@ -182,7 +208,7 @@ export default function Postuler() {
     setPaiementSuccess(false);
     setPaiementMessage("");
   };
-  
+
   // Navigation
   const handleBack = () => {
     console.log(`Retour à l'étape ${step - 1}`);
@@ -190,52 +216,52 @@ export default function Postuler() {
     resetPaymentStates();
     setStep(step - 1);
   };
-  
+
   const handleNext = () => {
     console.log(`Passage à l'étape ${step + 1}`);
     resetPaymentStates();
     setStep(step + 1);
   };
-  
+
   // Réessayer le paiement
   const handleRetryPayment = () => {
     console.log("Réessai du paiement");
-    
+
     const savedPaymentLink = localStorage.getItem('paymentLink');
-    
+
     if (retryCount >= MAX_RETRY_ATTEMPTS) {
       console.log("Nombre maximum de tentatives atteint");
-      setErrors({ 
-        form: `Vous avez atteint le nombre maximum de tentatives (${MAX_RETRY_ATTEMPTS}). Veuillez contacter le support ou réessayer plus tard.` 
+      setErrors({
+        form: `Vous avez atteint le nombre maximum de tentatives (${MAX_RETRY_ATTEMPTS}). Veuillez contacter le support ou réessayer plus tard.`
       });
       return;
     }
-    
+
     if (!savedPaymentLink) {
       console.log("Aucun lien de paiement disponible");
       setErrors({ form: "Aucun lien de paiement disponible. Veuillez recommencer le processus de candidature." });
       return;
     }
-    
+
     const newRetryCount = retryCount + 1;
     setRetryCount(newRetryCount);
     localStorage.setItem('paymentRetryCount', newRetryCount.toString());
-    
+
     setPaiementError(false);
     setPaiementSuccess(false);
-    
+
     console.log("Redirection vers le lien de paiement existant:", savedPaymentLink);
     window.location.href = savedPaymentLink;
   };
-  
+
   // Soumission finale du formulaire
   const handleFinalSubmit = async () => {
     console.log("Début de la soumission finale du formulaire");
     setIsSubmitting(true);
     setErrors({});
-    
+
     resetPaymentStates();
-    
+
     const requiredFiles = [
       'photo_identite',
       'casier_judiciaire',
@@ -244,21 +270,21 @@ export default function Postuler() {
       'certificat_medical',
       'acte_naissance'
     ];
-    
+
     if (formData.type_bourse === 'étrangère') {
       requiredFiles.push('passeport');
       console.log("Ajout du passeport aux fichiers requis (bourse étrangère)");
     }
-    
+
     if (formData.mode_paiement === 'depot_physique') {
       requiredFiles.push('preuve_paiement');
       console.log("Ajout de la preuve de paiement aux fichiers requis (dépôt physique)");
     }
-    
+
     console.log("Fichiers requis:", requiredFiles);
-    
+
     const missingFiles = requiredFiles.filter(field => !formData[field]);
-    
+
     if (missingFiles.length > 0) {
       console.error("Fichiers manquants:", missingFiles);
       setErrors({
@@ -267,15 +293,15 @@ export default function Postuler() {
       setIsSubmitting(false);
       return;
     }
-    
+
     console.log("Tous les fichiers requis sont présents");
-    
+
     console.log("Données du formulaire avant envoi:", {
       ...formData,
       email: formData.email ? formData.email.substring(0, 3) + "***" : null,
       telephone: formData.telephone ? formData.telephone.substring(0, 3) + "***" : null
     });
-    
+
     console.log("Détails importants:", {
       pays_souhaite: formData.pays_souhaite,
       type_bourse: formData.type_bourse,
@@ -284,44 +310,44 @@ export default function Postuler() {
       mode_paiement: formData.mode_paiement,
       prenom: formData.prenom // Vérification du prénom
     });
-    
+
     try {
       console.log("Préparation des données pour l'envoi");
       const formDataToSend = new FormData();
-      
+
       // Ajout explicite des champs texte pour s'assurer qu'ils sont bien envoyés
       const textFields = [
-        'nationalite', 'nom', 'prenom', 'date_naissance', 'lieu_naissance', 
-        'telephone', 'email', 'sexe', 'adresse', 'niveau_etude', 
-        'moyenne', 'type_bourse', 'etablissement', 'pays_souhaite', 
-        'filiere_souhaitee', 'mode_paiement'
+        'nationalite', 'nom', 'prenom', 'date_naissance', 'lieu_naissance',
+        'telephone', 'email', 'sexe', 'adresse', 'niveau_etude',
+        'moyenne', 'type_bourse', 'etablissement', 'pays_souhaite',
+        'filiere_souhaitee', 'niveau_vise', 'mode_paiement' 
       ];
-      
+
       textFields.forEach(field => {
         if (formData[field] !== null && formData[field] !== undefined && formData[field] !== "") {
           formDataToSend.append(field, formData[field]);
           console.log(`Ajout explicite du champ: ${field} = ${formData[field]}`);
         }
       });
-      
+
       // Ajout des champs spéciaux
       formDataToSend.append('cas_social', formData.cas_social ? 1 : 0);
       formDataToSend.append('certification', formData.certification ? 1 : 0);
-      
+
       // Ajout des fichiers
       const fileFields = [
         'photo_identite', 'casier_judiciaire', 'certificat_nationalite',
         'attestation_bac', 'certificat_medical', 'acte_naissance',
         'passeport', 'preuve_paiement'
       ];
-      
+
       fileFields.forEach(field => {
         if (formData[field] instanceof File) {
           console.log(`Ajout du fichier: ${field} (${formData[field].name}, ${formData[field].size} octets)`);
           formDataToSend.append(field, formData[field]);
         }
       });
-      
+
       console.log("Envoi des données au serveur");
       const response = await fetch("/candidature/submit", {
         method: "POST",
@@ -330,23 +356,23 @@ export default function Postuler() {
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         }
       });
-      
+
       console.log("Réponse du serveur reçue:", {
         status: response.status,
         statusText: response.statusText
       });
-      
+
       const data = await response.json();
       console.log("Réponse du serveur (JSON):", data);
-      
+
       if (data.success) {
         console.log("Candidature soumise avec succès");
-        
+
         if (data.requires_payment && data.link) {
           console.log("Stockage du lien de paiement dans localStorage:", data.link);
           localStorage.setItem('paymentLink', data.link);
           localStorage.setItem('paymentRetryCount', '0');
-          
+
           console.log("Redirection vers la page de paiement:", data.link);
           window.location.href = data.link;
         } else {
@@ -364,7 +390,7 @@ export default function Postuler() {
       setIsSubmitting(false);
     }
   };
-  
+
   // Page de succès
   if (paiementSuccess) {
     console.log("Affichage de la page de succès");
@@ -392,7 +418,7 @@ export default function Postuler() {
                     }}>
                       Retour à l'accueil
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
                         console.log("Déposer une autre candidature");
@@ -412,13 +438,13 @@ export default function Postuler() {
       </PublicLayout>
     );
   }
-  
+
   // Page d'échec
   if (paiementError) {
     console.log("Affichage de la page d'échec");
-    
+
     const savedPaymentLink = localStorage.getItem('paymentLink');
-    
+
     return (
       <PublicLayout>
         <div className="min-h-screen py-12 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
@@ -434,11 +460,11 @@ export default function Postuler() {
                   <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
                   <h2 className="mb-4 text-2xl font-bold text-red-700">😔 Échec du paiement</h2>
                   <p className="mb-4">{paiementMessage || "Une erreur est survenue lors du traitement de votre paiement."}</p>
-                  
+
                   <p className="mb-4 text-sm text-gray-600">
                     Tentative {retryCount} sur {MAX_RETRY_ATTEMPTS}
                   </p>
-                  
+
                   {retryCount >= MAX_RETRY_ATTEMPTS ? (
                     <p className="mb-6 font-medium text-red-600">
                       Vous avez atteint le nombre maximum de tentatives. Veuillez contacter le support ou réessayer plus tard.
@@ -448,15 +474,15 @@ export default function Postuler() {
                       Vous pouvez réessayer le paiement. Le lien de paiement reste valide.
                     </p>
                   )}
-                  
+
                   <div className="flex flex-col justify-center gap-4 sm:flex-row">
-                    <Button 
-                      onClick={handleRetryPayment} 
+                    <Button
+                      onClick={handleRetryPayment}
                       disabled={retryCount >= MAX_RETRY_ATTEMPTS || !savedPaymentLink}
                       className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
                     >
-                      {retryCount >= MAX_RETRY_ATTEMPTS 
-                        ? "Nombre maximum de tentatives atteint" 
+                      {retryCount >= MAX_RETRY_ATTEMPTS
+                        ? "Nombre maximum de tentatives atteint"
                         : "Réessayer le paiement"}
                     </Button>
                     <Button onClick={() => {
@@ -467,7 +493,7 @@ export default function Postuler() {
                     }} variant="outline">
                       Retour à l'accueil
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
                         console.log("Déposer une autre candidature");
@@ -487,11 +513,12 @@ export default function Postuler() {
       </PublicLayout>
     );
   }
-  
+
+  // Rendu du composant d'étape approprié
   // Rendu du composant d'étape approprié
   const renderStepComponent = () => {
     console.log(`Rendu du composant pour l'étape ${step}`);
-    
+
     const commonProps = {
       formData,
       updateFormData,
@@ -500,7 +527,7 @@ export default function Postuler() {
       onNext: handleNext,
       onBack: handleBack
     };
-    
+
     switch (step) {
       case 1:
         console.log("Affichage de l'étape d'identification");
@@ -510,6 +537,15 @@ export default function Postuler() {
         return <EtapePieces {...commonProps} />;
       case 3:
         console.log("Affichage de l'étape de bourse");
+        console.log("Données transmises à EtapeBourse:", {
+          boursesCount: bourses.length,
+          etablissementsCount: etablissements.length,
+          etablissements: etablissements.map(e => ({
+            nom: e.nom,
+            type: e.type,
+            filieresCount: e.filieres ? e.filieres.length : 0
+          }))
+        });
         return <EtapeBourse {...commonProps} bourses={bourses} etablissements={etablissements} />;
       case 4:
         console.log("Affichage de l'étape de paiement");
@@ -519,7 +555,7 @@ export default function Postuler() {
         return null;
     }
   };
-  
+
   return (
     <PublicLayout>
       <div className="min-h-screen py-12 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
