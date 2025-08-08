@@ -486,21 +486,62 @@ class PostulerController extends Controller
         
         // 3. Envoyer l'email de bienvenue à l'étudiant
         try {
-            $etudiant->notify(new BienvenuePostulerController($motDePasse));
+            Log::info('Tentative d\'envoi de l\'email de bienvenue', [
+                'etudiant_id' => $etudiant->id,
+                'email' => $this->maskEmail($etudiant->email),
+                'nom' => $this->maskName($etudiant->nom . ' ' . $etudiant->prenom),
+                'dossier_id' => $dossier->id,
+                'notification_class' => BienvenuePostulerController::class,
+                'implements_should_queue' => in_array(ShouldQueue::class, class_implements(BienvenuePostulerController::class))
+            ]);
+            
+            $notification = new BienvenuePostulerController($motDePasse);
+            $etudiant->notify($notification);
+            
+            Log::info('Email de bienvenue envoyé avec succès', [
+                'etudiant_id' => $etudiant->id,
+                'email' => $this->maskEmail($etudiant->email),
+                'notification_id' => $notification->id ?? null,
+                'queue_connection' => config('queue.default'),
+                'queue_name' => config('queue.connections.' . config('queue.default') . '.queue', 'default')
+            ]);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'envoi de l\'email de bienvenue', [
                 'etudiant_id' => $etudiant->id,
-                'error' => $e->getMessage()
+                'email' => $this->maskEmail($etudiant->email),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
         
         // 4. Notifier les agents responsables
         try {
             $agents = \App\Models\User::role('agent')->get();
+            $agentsCount = $agents->count();
+            
+            Log::info('Tentative d\'envoi des notifications aux agents', [
+                'dossier_id' => $dossier->id,
+                'agents_count' => $agentsCount,
+                'notification_class' => NouvelleCandidatureNotification::class,
+                'implements_should_queue' => in_array(ShouldQueue::class, class_implements(NouvelleCandidatureNotification::class))
+            ]);
+            
             Notification::send($agents, new NouvelleCandidatureNotification($dossier));
+            
+            Log::info('Notifications aux agents envoyées avec succès', [
+                'dossier_id' => $dossier->id,
+                'agents_notified' => $agentsCount,
+                'queue_connection' => config('queue.default'),
+                'queue_name' => config('queue.connections.' . config('queue.default') . '.queue', 'default')
+            ]);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'envoi des notifications aux agents', [
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
                 'dossier_id' => $dossier->id
             ]);
         }
@@ -518,6 +559,15 @@ class PostulerController extends Controller
             
             // Vérifier si le numéro est valide avant d'envoyer le SMS
             if (!empty($formattedPhone)) {
+                Log::info('Tentative d\'envoi du SMS de bienvenue', [
+                    'etudiant_id' => $etudiant->id,
+                    'dossier_id' => $dossier->id,
+                    'telephone_original' => $this->maskSensitiveString($dossier->telephone),
+                    'telephone_formate' => $this->maskSensitiveString($formattedPhone),
+                    'message_length' => strlen($message),
+                    'sms_service' => 'MTN Tinda'
+                ]);
+                
                 // Envoyer le SMS via le service MTN Tinda
                 $smsResponse = $this->mtnTindaService->sendSMS(
                     $message,
@@ -532,7 +582,7 @@ class PostulerController extends Controller
                 );
                 
                 // Journaliser la réponse du service SMS
-                Log::info('SMS de bienvenue envoyé', [
+                Log::info('SMS de bienvenue envoyé avec succès', [
                     'etudiant_id' => $etudiant->id,
                     'dossier_id' => $dossier->id,
                     'telephone_original' => $this->maskSensitiveString($dossier->telephone),
@@ -552,7 +602,10 @@ class PostulerController extends Controller
                 'etudiant_id' => $etudiant->id,
                 'dossier_id' => $dossier->id,
                 'telephone' => $this->maskSensitiveString($dossier->telephone),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
