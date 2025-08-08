@@ -175,7 +175,7 @@ class PostulerController extends Controller
         return redirect()->route('candidature.index', [
             'success' => $success,
             'error' => $error,
-            'payment_status' => $paymentStatus
+            'payment_status' => $paymentStatus ?? 'success'
         ]);
     }
     

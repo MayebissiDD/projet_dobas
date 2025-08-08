@@ -305,6 +305,7 @@ class PaiementController extends Controller
             try {
                 $transactionId = $paiement->transaction_id;
                 
+                Log::info('transaction ', ['transaction_id' => $transactionId]);
                 if ($transactionId) {
                     Log::info('Vérification du statut de la transaction auprès de Lygos', ['transaction_id' => $transactionId]);
                     
@@ -343,7 +344,7 @@ class PaiementController extends Controller
                 // En cas d'erreur, on fait confiance à notre paramètre
                 $this->markPaymentAsSuccessful($paiement);
                 
-                return redirect()->route('candidature.confirmation', ['success' => 1]);
+                return redirect()->route('candidature.confirmation', ['success' => 1,'payment_status' => 'success']);
             }
         }
         

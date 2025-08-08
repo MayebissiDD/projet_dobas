@@ -64,14 +64,15 @@ export default function Postuler() {
   // Détecter le statut du paiement via query params ou props
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    console.log("Analyse des paramètres de l'URL:", params);
     const success = params.get("success") || initialSuccess;
     const error = params.get("error") || initialError;
     const paymentStatus = params.get("payment_status") || initialPaymentStatus;
-    
-    if (success === "1" && paymentStatus === "success") {
+    console.log("Statut du paiement détecté:", { success, error, paymentStatus });
+    if (success === "1") {
       console.log("Paiement réussi détecté, affichage de la page de succès");
       setPaiementSuccess(true);
-      resetPaymentStates();
+      // resetPaymentStates();
     } else if (error) {
       console.log("Erreur de paiement détectée:", error);
       setPaiementError(true);
