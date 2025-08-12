@@ -1,178 +1,158 @@
-import StudentLayout from '@/Layouts/StudentLayout';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Bell, CheckCircle, AlertTriangle, XCircle, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { usePage } from '@inertiajs/react';
+// resources/js/Pages/Student/Dossiers/Index.jsx
+import { Head } from "@inertiajs/react";
+import StudentLayout from "@/Layouts/StudentLayout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@inertiajs/react";
+import { 
+  FileText, 
+  Plus, 
+  Eye, 
+  Download,
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle
+} from "lucide-react";
 
-const icons = {
-  info: <Info className="text-blue-500" />,
-  success: <CheckCircle className="text-green-600" />,
-  warning: <AlertTriangle className="text-yellow-500" />,
-  error: <XCircle className="text-red-600" />,
-};
-
-export default function DossiersNotifications({ dossiers = [] }) {
-  const { flash } = usePage().props;
-  const [notifications, setNotifications] = useState([]);
-  const [filter, setFilter] = useState('all');
-
-  useEffect(() => {
-    window.Echo.private(`App.Models.User.${window.userId}`)
-      .notification((notification) => {
-        setNotifications((prev) => [
-          {
-            id: notification.id || Date.now(),
-            title: notification.message || 'Notification',
-            body: notification.message || '',
-            type: notification.type || 'info',
-            read: false,
-            date: new Date().toLocaleString('fr-FR'),
-          },
-          ...prev,
-        ]);
-      });
-  }, []);
-
-  const filtered = notifications.filter(n =>
-    filter === 'all' ? true :
-    filter === 'read' ? n.read :
-    !n.read
-  );
-
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+export default function Dossiers({ dossiers }) {
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'accepte':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'refuse':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'en_cours':
+        return <Clock className="h-5 w-5 text-yellow-500" />;
+      default:
+        return <AlertCircle className="h-5 w-5 text-blue-500" />;
+    }
   };
 
-  const archive = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'accepte':
+        return 'Acceptée';
+      case 'refuse':
+        return 'Refusée';
+      case 'en_cours':
+        return 'En cours de traitement';
+      default:
+        return 'En attente';
+    }
+  };
+
+  const getStatusVariant = (status) => {
+    switch (status) {
+      case 'accepte':
+        return "success";
+      case 'refuse':
+        return "destructive";
+      case 'en_cours':
+        return "default";
+      default:
+        return "secondary";
+    }
   };
 
   return (
-    <div className="min-h-screen py-10 px-6 md:px-20 bg-gradient-to-br from-white via-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 text-zinc-900 dark:text-white">
-      {flash.success && (
-        <div className="mb-4 p-3 rounded bg-green-100 text-green-800 border border-green-300">
-          {flash.success}
-        </div>
-      )}
-      {flash.error && (
-        <div className="mb-4 p-3 rounded bg-red-100 text-red-800 border border-red-300">
-          {flash.error}
-        </div>
-      )}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          <Bell className="w-6 h-6 text-green-500" />
-          Mes dossiers de candidature
-        </h1>
-        <p className="text-muted-foreground">Suivi en temps réel de vos candidatures, pièces et paiements.</p>
-      </motion.div>
-      <div className="space-y-8 mb-12">
-        {dossiers.length === 0 && (
-          <div className="text-center text-zinc-400">Aucun dossier soumis pour l’instant.</div>
-        )}
-        {dossiers.map((dossier) => (
-          <div key={dossier.id} className="rounded-xl border shadow-sm bg-white dark:bg-zinc-800 p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-              <div>
-                <div className="font-semibold text-lg">{dossier.bourse?.nom}</div>
-                <div className="text-zinc-500 text-sm">Soumis le {dossier.date_soumission ? new Date(dossier.date_soumission).toLocaleDateString('fr-FR') : ''}</div>
-              </div>
-              <div>
-                <span className={
-                  dossier.statut === 'accepté' ? 'text-green-600 font-semibold' :
-                  dossier.statut === 'rejeté' ? 'text-red-600 font-semibold' :
-                  'text-yellow-500 font-semibold'
-                }>
-                  {dossier.statut}
-                </span>
-              </div>
+    <>
+      <Head title="Mes candidatures" />
+      <StudentLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Mes candidatures</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Suivez l'état de vos candidatures aux bourses
+              </p>
             </div>
-            <div className="mt-2">
-              <h4 className="font-semibold mb-1">Pièces et justificatifs</h4>
-              {dossier.pieces && dossier.pieces.length > 0 ? (
-                <ul className="list-disc ml-6">
-                  {dossier.pieces.map((piece) => (
-                    <li key={piece.id}>
-                      {piece.nom_piece} :
-                      {piece.url_fichier ? (
-                        <a href={piece.url_fichier} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-2">Voir le fichier</a>
-                      ) : (
-                        <span className="text-zinc-400 ml-2">Aucun fichier</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span className="text-zinc-400">Aucune pièce jointe</span>
-              )}
-            </div>
+            <Link href="/postuler">
+              <Button className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Nouvelle candidature
+              </Button>
+            </Link>
           </div>
-        ))}
-      </div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-          <Bell className="w-5 h-5 text-green-500" />
-          Mes notifications
-        </h2>
-        <p className="text-muted-foreground mb-4">Alertes et informations importantes.</p>
-        <div className="flex gap-2 mb-6">
-          <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')}>Toutes</Button>
-          <Button variant={filter === 'unread' ? 'default' : 'outline'} onClick={() => setFilter('unread')}>Non lues</Button>
-          <Button variant={filter === 'read' ? 'default' : 'outline'} onClick={() => setFilter('read')}>Lues</Button>
-        </div>
-        <div className="space-y-4">
-          {filtered.length === 0 && (
-            <div className="text-center text-zinc-400">Aucune notification pour l’instant.</div>
-          )}
-          {filtered.map((notif) => (
-            <motion.div
-              key={notif.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.05 }}
-              className={cn(
-                "p-4 rounded-lg shadow-sm border",
-                notif.read ? "bg-zinc-100 dark:bg-zinc-800" : "bg-green-50 dark:bg-zinc-700"
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div className="mt-1">{icons[notif.type] || <Info />}</div>
-                <div className="flex-1">
-                  <h3 className="text-md font-semibold">{notif.title}</h3>
-                  <p className="text-sm text-muted-foreground">{notif.body}</p>
-                  <p className="text-xs text-zinc-500 mt-1">{notif.date}</p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {!notif.read && (
-                    <Button size="sm" variant="secondary" onClick={() => markAsRead(notif.id)}>
-                      Marquer comme lue
+
+          {dossiers.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6">
+              {dossiers.map((dossier) => (
+                <Card key={dossier.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                      <div className="mb-4 md:mb-0">
+                        <div className="flex items-center">
+                          {getStatusIcon(dossier.statut)}
+                          <h3 className="ml-2 text-lg font-semibold text-gray-900">
+                            {dossier.bourse}
+                          </h3>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {dossier.ecole} - {dossier.filiere}
+                        </p>
+                        <div className="flex items-center mt-2 text-sm text-gray-500">
+                          <span className="font-medium">N° {dossier.numero_dossier}</span>
+                          <span className="mx-2">•</span>
+                          <span>Soumis le {dossier.date_soumission}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col md:items-end space-y-2">
+                        <div className="flex space-x-2">
+                          <Badge variant={getStatusVariant(dossier.statut)}>
+                            {getStatusText(dossier.statut)}
+                          </Badge>
+                          <Badge variant={dossier.statut_paiement === 'paye' ? "success" : "outline"}>
+                            {dossier.statut_paiement === 'paye' ? 'Payé' : 'Non payé'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex space-x-2 mt-2">
+                          <Link href={`/etudiant/dossiers/${dossier.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="mr-1 h-4 w-4" />
+                              Détails
+                            </Button>
+                          </Link>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `/etudiant/dossiers/${dossier.id}/download-all`}
+                          >
+                            <Download className="mr-1 h-4 w-4" />
+                            Télécharger
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <FileText className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune candidature</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Vous n'avez pas encore soumis de candidature.
+                </p>
+                <div className="mt-6">
+                  <Link href="/postuler">
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Postuler maintenant
                     </Button>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={() => archive(notif.id)}>
-                    Archiver
-                  </Button>
+                  </Link>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </motion.div>
-    </div>
+      </StudentLayout>
+    </>
   );
 }
-
-DossiersNotifications.layout = (page) => <StudentLayout>{page}</StudentLayout>;

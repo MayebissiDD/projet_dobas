@@ -22,7 +22,16 @@ class NotificationController extends Controller
         
         $notifications = $etudiant->notifications()
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->paginate(20)
+            ->through(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => $notification->type,
+                    'message' => $notification->data['message'] ?? 'Notification',
+                    'read_at' => $notification->read_at,
+                    'created_at' => $notification->created_at->format('d/m/Y H:i'),
+                ];
+            });
         
         return Inertia::render('Etudiant/Notifications', [
             'notifications' => $notifications,

@@ -19,8 +19,22 @@ export default function EtapeIdentification({
   const validateStep = () => {
     const newErrors = {};
     if (!formData.nom) newErrors.nom = "Nom requis";
-    if (!formData.prenom) newErrors.prenom = "Prénom requis"; // Validation du prénom
-    if (!formData.date_naissance) newErrors.date_naissance = "Date de naissance requise";
+    if (!formData.prenom) newErrors.prenom = "Prénom requis";
+    // Validation date_naissance : requise et < aujourd'hui
+    if (!formData.date_naissance) {
+      newErrors.date_naissance = "Date de naissance requise";
+    } else {
+      const today = new Date();
+      const inputDate = new Date(formData.date_naissance);
+      // On ignore l'heure pour la comparaison
+      today.setHours(0,0,0,0);
+      inputDate.setHours(0,0,0,0);
+      if (isNaN(inputDate.getTime())) {
+        newErrors.date_naissance = "Date de naissance invalide";
+      } else if (inputDate >= today) {
+        newErrors.date_naissance = "La date de naissance doit être antérieure à aujourd'hui.";
+      }
+    }
     if (!formData.lieu_naissance) newErrors.lieu_naissance = "Lieu de naissance requis";
     if (!formData.telephone) newErrors.telephone = "Téléphone requis";
     if (!formData.email) newErrors.email = "Email requis";
@@ -84,6 +98,7 @@ export default function EtapeIdentification({
           <Input
             type="date"
             value={formData.date_naissance || ""}
+            max={new Date().toISOString().split('T')[0]}
             onChange={e => updateFormData({ date_naissance: e.target.value })}
           />
           {errors.date_naissance && <p className="text-sm text-red-500 animate-pulse">{errors.date_naissance}</p>}

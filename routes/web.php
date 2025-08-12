@@ -139,22 +139,22 @@ Route::prefix('etudiant')->name('etudiant.')->middleware('auth:etudiant')->group
     Route::get('/statut', fn() => Inertia::render('Student/ApplicationStatus'))->name('status');
 
     // Dossiers
-    Route::get('/dossiers', [EtudiantDossierController::class, 'index'])->name('dossiers.index');
-    Route::get('/dossiers/create', [EtudiantDossierController::class, 'create'])->name('dossiers.create');
-    Route::post('/dossiers', [EtudiantDossierController::class, 'store'])->name('dossiers.store');
-    Route::get('/dossiers/{id}', [EtudiantDossierController::class, 'show'])->name('dossiers.show');
-    Route::get('/dossiers/{dossier}/pieces/{piece}/download', [EtudiantDossierController::class, 'downloadPiece'])->name('dossiers.download-piece');
-    Route::get('/dossiers/{dossier}/download-all', [EtudiantDossierController::class, 'downloadAllPieces'])->name('dossiers.download-all');
+    Route::get('/dossiers', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'index'])->name('dossiers.index');
+    Route::get('/dossiers/create', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'create'])->name('dossiers.create');
+    Route::post('/dossiers', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'store'])->name('dossiers.store');
+    Route::get('/dossiers/{id}', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'show'])->name('dossiers.show');
+    Route::get('/dossiers/{dossier}/pieces/{piece}/download', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'downloadPiece'])->name('dossiers.download-piece');
+    Route::get('/dossiers/{dossier}/download-all', [\App\Http\Controllers\Student\EtudiantDossierController::class, 'downloadAllPieces'])->name('dossiers.download-all');
 
     // Paiements
-    Route::get('/paiements', [StudentPaiementController::class, 'index'])->name('paiements.index');
-    Route::get('/paiement', [StudentPaiementController::class, 'webview'])->name('paiement.webview');
-    Route::get('/paiement/lygos/status', [StudentPaiementController::class, 'lygosStatus'])->name('paiement.lygos.status');
+    Route::get('/paiements', [\App\Http\Controllers\Student\PaiementController::class, 'index'])->name('paiements.index');
+    Route::get('/paiement', [\App\Http\Controllers\Student\PaiementController::class, 'webview'])->name('paiement.webview');
+    Route::get('/paiement/lygos/status', [\App\Http\Controllers\Student\PaiementController::class, 'lygosStatus'])->name('paiement.lygos.status');
 
     // Notifications
-    Route::get('/notifications', [StudentNotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{id}/read', [StudentNotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [StudentNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/notifications', [\App\Http\Controllers\Student\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Student\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Student\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Profil
     Route::get('/profil', [EtudiantProfileController::class, 'edit'])->name('profile.edit');

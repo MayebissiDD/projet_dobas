@@ -2,6 +2,20 @@
 // 1. COMPOSANT PRINCIPAL - Postuler.jsx
 // ========================================
 import React, { useState, useEffect } from "react";
+// Fonction utilitaire pour convertir une date en YYYY-MM-DD
+function toIsoDate(dateStr) {
+  if (!dateStr) return "";
+  // Si déjà au format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  // Si format DD/MM/YYYY ou D/M/YYYY
+  const match = dateStr.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (match) {
+    const [ , d, m, y ] = match;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  // Sinon, retourne tel quel
+  return dateStr;
+}
 import PublicLayout from "@/Layouts/PublicLayout";
 import { usePage } from "@inertiajs/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -323,10 +337,17 @@ export default function Postuler() {
         'filiere_souhaitee', 'niveau_vise', 'mode_paiement' 
       ];
 
+
       textFields.forEach(field => {
-        if (formData[field] !== null && formData[field] !== undefined && formData[field] !== "") {
-          formDataToSend.append(field, formData[field]);
-          console.log(`Ajout explicite du champ: ${field} = ${formData[field]}`);
+        let value = formData[field];
+        // Correction du format de la date de naissance
+        if (field === 'date_naissance') {
+          value = toIsoDate(value);
+          console.log(`Formatage date_naissance: ${formData[field]} => ${value}`);
+        }
+        if (value !== null && value !== undefined && value !== "") {
+          formDataToSend.append(field, value);
+          console.log(`Ajout explicite du champ: ${field} = ${value}`);
         }
       });
 

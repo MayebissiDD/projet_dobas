@@ -20,11 +20,26 @@ class PaiementController extends Controller
     public function index()
     {
         $etudiant = Auth::guard('etudiant')->user();
+        
         $paiements = Paiement::whereHas('dossier', function($query) use ($etudiant) {
             $query->where('etudiant_id', $etudiant->id);
-        })->latest()->paginate(10);
+        })->latest()->paginate(10)
+        ->through(function ($paiement) {
+            return [
+                'id' => $paiement->id,
+                'montant' => $paiement->montant,
+                'statut' => $paiement->statut,
+                'methode' => $paiement->methode,
+                'reference' => $paiement->reference,
+                'date_paiement' => $paiement->date_paiement ? $paiement->date_paiement->format('d/m/Y H:i') : null,
+                'dossier' => [
+                    'id' => $paiement->dossier->id,
+                    'numero_dossier' => $paiement->dossier->numero_dossier,
+                ],
+            ];
+        });
         
-        return Inertia::render('Student/Paiements', [
+        return Inertia::render('Etudiant/Paiements', [
             'paiements' => $paiements
         ]);
     }
@@ -38,10 +53,13 @@ class PaiementController extends Controller
             
         $montant = 7500; // Frais de dossier fixes
         
-        return Inertia::render('Student/PaiementWebview', [
+        return Inertia::render('Etudiant/PaiementWebview', [
             'montant' => $montant,
             'dossierId' => $dossierId,
-            'dossier' => $dossier
+            'dossier' => [
+                'id' => $dossier->id,
+                'numero_dossier' => $dossier->numero_dossier,
+            ]
         ]);
     }
 
@@ -71,19 +89,25 @@ class PaiementController extends Controller
         
         if ($response->successful()) {
             $data = $response->json();
-            // Log activité
-            \App\Services\ActivityLogger::log('paiement_initie', Dossier::class, $dossierId, 'Paiement Lygos initié.');
+            
+            // Enregistrer le paiement
+            Paiement::create([
+                'dossier_id' => $dossierId,
+                'montant' => $amount,
+                'reference' => $data['transaction_id'],
+                'methode' => 'Lygos',
+                'statut' => 'en_attente',
+                'date_paiement' => null,
+            ]);
             
             return redirect($data['link']);
         } else {
-            \App\Services\ActivityLogger::log('paiement_erreur', Dossier::class, $dossierId, 'Erreur lors de la création du paiement Lygos.');
             return back()->withErrors(['lygos' => 'Erreur lors de la création du paiement Lygos.']);
         }
     }
 
     public function stripeCallback(Request $request)
     {
-        \App\Services\ActivityLogger::log('paiement_stripe_callback', null, null, 'Callback Stripe reçu.');
         return redirect()->route('etudiant.paiements.index');
     }
 
@@ -92,6 +116,34 @@ class PaiementController extends Controller
      */
     public function success(Request $request)
     {
+        // Mettre à jour le statut du paiement
+        $transactionId = $request->input('transaction_id');
+        $orderId = $request->input('order_id');
+        
+        if ($transactionId && $orderId) {
+            $paiement = Paiement::where('reference', $transactionId)
+                ->whereHas('dossier', function($query) use ($orderId) {
+                    $query->where('id', $orderId);
+                })
+                ->first();
+                
+            if ($paiement) {
+                $paiement->update([
+                    'statut' => 'effectué',
+                    'date_paiement' => now(),
+                ]);
+                
+                // Mettre à jour le statut du dossier
+                $dossier = $paiement->dossier;
+                $dossier->update([
+                    'statut_paiement' => 'paye',
+                ]);
+                
+                // Envoyer une notification à l'étudiant
+                $dossier->etudiant->notify(new PaiementRecuNotification($paiement));
+            }
+        }
+        
         return redirect()->route('etudiant.paiements.index')->with('success', 'Paiement effectué avec succès!');
     }
 
@@ -118,10 +170,8 @@ class PaiementController extends Controller
         ])->get(config('services.lygos.api_url') . 'gateway/payin/' . $orderId);
         
         if ($response->successful()) {
-            \App\Services\ActivityLogger::log('paiement_status', Dossier::class, $orderId, 'Statut paiement Lygos consulté.');
             return response()->json($response->json());
         } else {
-            \App\Services\ActivityLogger::log('paiement_status_erreur', Dossier::class, $orderId, 'Erreur lors de la récupération du statut Lygos.');
             return response()->json(['error' => 'Impossible de récupérer le statut du paiement Lygos.'], 400);
         }
     }
