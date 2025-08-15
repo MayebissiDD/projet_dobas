@@ -11,9 +11,14 @@ import {
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
 } from "@/components/ui/pagination";
-import { Eye } from "lucide-react";
+import { Eye, Check, X, School } from "lucide-react";
+import { useState } from "react";
 
 export default function DossierList({ dossiers = { data: [], current_page: 1, last_page: 1 }, bourses = [], filters = {} }) {
+  const [selectedDossier, setSelectedDossier] = useState(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+
   const handleFilterChange = (value) => {
     const query = {
       ...filters,
@@ -33,6 +38,40 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
     router.get("/agent/dossiers", query, {
       preserveScroll: true,
       preserveState: true,
+    });
+  };
+
+  const validateDossier = (id) => {
+    if (confirm("Êtes-vous sûr de vouloir valider ce dossier ?")) {
+      router.post(`/agent/dossiers/${id}/valider`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+          // Action après succès
+        }
+      });
+    }
+  };
+
+  const openRejectionModal = (dossier) => {
+    setSelectedDossier(dossier);
+    setShowRejectionModal(true);
+  };
+
+  const rejectDossier = () => {
+    if (!rejectionReason.trim()) {
+      alert("Veuillez saisir une raison de rejet");
+      return;
+    }
+
+    router.post(`/agent/dossiers/${selectedDossier.id}/rejeter`, {
+      motif: rejectionReason
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setShowRejectionModal(false);
+        setRejectionReason("");
+        setSelectedDossier(null);
+      }
     });
   };
 
@@ -60,9 +99,10 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="en attente">En attente</SelectItem>
-              <SelectItem value="accepté">Accepté</SelectItem>
-              <SelectItem value="rejeté">Rejeté</SelectItem>
+              <SelectItem value="en_attente">En attente</SelectItem>
+              <SelectItem value="accepte">Accepté</SelectItem>
+              <SelectItem value="rejete">Rejeté</SelectItem>
+              <SelectItem value="incomplet">Incomplet</SelectItem>
             </SelectContent>
           </Select>
 
@@ -88,39 +128,72 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-100">
-                <TableHead>Nom</TableHead>
-                <TableHead>Bourse</TableHead>
+                <TableHead>Étudiant</TableHead>
+                <TableHead>École souhaitée</TableHead>
                 <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {Array.isArray(dossiers.data) && dossiers.data.length > 0 ? (
                 dossiers.data.map((dossier, idx) => (
                   <TableRow key={dossier.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <TableCell className="font-medium">{dossier.nom}</TableCell>
-                    <TableCell>{dossier.bourse?.nom || "-"}</TableCell>
+                    <TableCell className="font-medium">{dossier.nom} {dossier.prenom}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <School className="h-4 w-4 mr-1 text-gray-500" />
+                        {dossier.etablissement || dossier.ecole?.nom || "-"}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         className="capitalize rounded-full text-xs px-3 py-1"
                         variant={
-                          dossier.statut === "accepté"
-                            ? "success"
-                            : dossier.statut === "rejeté"
+                          dossier.statut === "accepte"
+                            ? "default"
+                            : dossier.statut === "rejete"
                               ? "destructive"
-                              : "outline"
+                              : dossier.statut === "incomplet"
+                                ? "secondary"
+                                : "outline"
                         }
                       >
                         {dossier.statut}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/agent/dossiers/${dossier.id}`}>
-                        <Button variant="secondary" size="sm" className="gap-1">
-                          <Eye className="w-4 h-4" />
-                          Voir
-                        </Button>
-                      </Link>
+                      <div className="flex justify-end space-x-2">
+                        <Link href={route('agent.dossiers.show', dossier.id)}>
+                          <Button variant="secondary" size="sm" className="gap-1">
+                            <Eye className="w-4 h-4" />
+                            Voir
+                          </Button>
+                        </Link>
+
+                        {dossier.statut === "en_attente" || dossier.statut === "incomplet" ? (
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => validateDossier(dossier.id)}
+                            >
+                              <Check className="w-4 h-4" />
+                              Valider
+                            </Button>
+
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => openRejectionModal(dossier)}
+                            >
+                              <X className="w-4 h-4" />
+                              Rejeter
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -151,6 +224,38 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
               ))}
             </PaginationContent>
           </Pagination>
+        )}
+
+        {/* Modal de rejet */}
+        {showRejectionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-medium mb-4">Rejeter le dossier</h3>
+              <p className="mb-4">Veuillez indiquer la raison du rejet du dossier de {selectedDossier?.nom} {selectedDossier?.prenom}:</p>
+              <textarea
+                className="w-full border rounded p-2 mb-4"
+                rows="4"
+                placeholder="Raison du rejet..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              ></textarea>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRejectionModal(false);
+                    setRejectionReason("");
+                    setSelectedDossier(null);
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button variant="destructive" onClick={rejectDossier}>
+                  Confirmer le rejet
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </AgentLayout>
     </>

@@ -2,7 +2,7 @@ import React from 'react';
 import AgentLayout from '@/Layouts/AgentLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Eye } from 'lucide-react';
+import { Eye, School } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 
@@ -14,7 +14,7 @@ export default function Dashboard({ dossiers, stats }) {
         <h1 className="text-3xl font-bold mb-6 text-zinc-800 dark:text-white">
           Tableau de bord Agent
         </h1>
-
+        
         {/* Cartes de statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <Card className="bg-blue-50 dark:bg-blue-900/30">
@@ -34,7 +34,7 @@ export default function Dashboard({ dossiers, stats }) {
             <CardContent><p className="text-4xl font-semibold">{stats.incomplets}</p></CardContent>
           </Card>
         </div>
-
+        
         {/* Table des derniers dossiers */}
         <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Derniers dossiers reçus</h2>
@@ -42,7 +42,7 @@ export default function Dashboard({ dossiers, stats }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Étudiant</TableHead>
-                <TableHead>Bourse</TableHead>
+                <TableHead>École souhaitée</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-center">Action</TableHead>
@@ -59,15 +59,23 @@ export default function Dashboard({ dossiers, stats }) {
               {dossiers.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell>{d.nom} {d.prenom}</TableCell>
-                  <TableCell>{d.bourse?.nom || '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <School className="h-4 w-4 mr-1 text-gray-500" />
+                      {d.etablissement || d.ecole?.nom || '—'}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={
-                      d.statut === 'valide' ? 'text-green-600 font-semibold' :
+                      d.statut === 'accepte' ? 'text-green-600 font-semibold' :
                       d.statut === 'rejete' ? 'text-red-600 font-semibold' :
                       d.statut === 'incomplet' ? 'text-yellow-500 font-semibold' :
                       'text-blue-600 font-semibold'
                     }>
-                      {d.statut}
+                      {d.statut === 'accepte' ? 'Validé' : 
+                       d.statut === 'rejete' ? 'Rejeté' : 
+                       d.statut === 'incomplet' ? 'Incomplet' : 
+                       'En attente'}
                     </span>
                   </TableCell>
                   <TableCell>{d.date_soumission ? new Date(d.date_soumission).toLocaleDateString('fr-FR') : '—'}</TableCell>

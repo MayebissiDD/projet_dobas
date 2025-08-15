@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
@@ -18,10 +17,13 @@ class DashboardController extends Controller
         if (!$agent || !$agent->hasRole('agent')) {
             abort(403, 'Accès non autorisé');
         }
-
-        // Récupération de tous les dossiers
-        $dossiers = Dossier::latest()->take(10)->get(); // Derniers 10 dossiers
-
+        
+        // Récupération des derniers dossiers avec leurs pièces
+        $dossiers = Dossier::with(['bourse', 'pieces'])
+                          ->latest()
+                          ->take(10)
+                          ->get();
+        
         // Statistiques par statut
         $stats = [
             'en_attente' => Dossier::where('statut', 'en_attente')->count(),
@@ -30,11 +32,10 @@ class DashboardController extends Controller
             'incomplets' => Dossier::where('statut', 'incomplet')->count(),
             'total'      => Dossier::count(),
         ];
-
+        
         return Inertia::render('Agent/Dashboard', [
             'dossiers' => $dossiers,
             'stats'    => $stats,
         ]);
     }
 }
-

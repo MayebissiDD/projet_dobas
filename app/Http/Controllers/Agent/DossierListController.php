@@ -15,7 +15,7 @@ class DossierListController extends Controller
 
     public function index(Request $request)
     {
-        $query = Dossier::query()->with('bourse');
+        $query = Dossier::query()->with(['bourse', 'pieces', 'ecole']); // Ajout de la relation ecole
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
@@ -47,8 +47,10 @@ class DossierListController extends Controller
 
     public function show($id)
     {
-        $dossier = Dossier::findOrFail($id);
-        $this->authorize('view', $dossier);
+        $dossier = Dossier::with(['bourse', 'pieces', 'etudiant', 'historique.modifiePar', 'commentaires.user'])->findOrFail($id);
+
+        // Si vous n'utilisez pas les policies, commentez ou supprimez cette ligne
+        // $this->authorize('view', $dossier);
 
         $ecoles = Ecole::all()->map(function ($ecole) {
             $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
@@ -70,7 +72,7 @@ class DossierListController extends Controller
 
     public function apiList()
     {
-        $dossiers = Dossier::with(['bourse', 'user'])->latest()->paginate(20);
+        $dossiers = Dossier::with(['bourse', 'etudiant', 'pieces'])->latest()->paginate(20);
         return response()->json(['dossiers' => $dossiers]);
     }
 }

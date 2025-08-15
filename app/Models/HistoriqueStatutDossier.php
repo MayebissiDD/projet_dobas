@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class HistoriqueStatutDossier extends Model
 {
     use HasFactory;
-
+    
+    protected $table = 'historique_statut_dossier'; // Ajoutez cette ligne
+    
     protected $fillable = [
         'dossier_id',
         'ancien_statut',
@@ -17,16 +19,16 @@ class HistoriqueStatutDossier extends Model
         'modifie_par',
         'modifie_le',
     ];
-
+    
     protected $casts = [
         'modifie_le' => 'datetime',
     ];
-
+    
     public function dossier(): BelongsTo
     {
         return $this->belongsTo(Dossier::class);
     }
-
+    
     public function modifiePar(): BelongsTo
     {
         return $this->belongsTo(User::class, 'modifie_par');

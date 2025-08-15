@@ -40,9 +40,10 @@ use App\Http\Controllers\Admin\{
 // Agent
 use App\Http\Controllers\Agent\{
     DashboardController as AgentDashboardController,
-    DossierListController as AgentDossierListController,
+    DossierListController,
     DossierActionController as AgentDossierActionController,
-    AgentNotificationController
+    AgentNotificationController,
+    PieceController
 };
 
 // Étudiant
@@ -168,20 +169,26 @@ Route::prefix('etudiant')->name('etudiant.')->middleware('auth:etudiant')->group
 Route::prefix('agent')->name('agent.')->middleware(['auth:web', 'role:agent'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [AgentDashboardController::class, 'dashboard'])->name('dashboard');
-
+    
     // Dossiers
-    Route::get('/dossiers', [AgentDossierListController::class, 'index'])->name('dossiers.index');
-    Route::get('/dossiers/{id}', [AgentDossierActionController::class, 'show'])->name('dossiers.show');
+    Route::get('/dossiers', [DossierListController::class, 'index'])->name('dossiers.index');
+    Route::get('/dossiers/{id}', [DossierListController::class, 'show'])->name('dossiers.show'); // Correction ici
+    Route::get('/api/dossiers', [DossierListController::class, 'apiList'])->name('dossiers.api'); // Ajout de cette route
+    
+    // Actions sur les dossiers
     Route::post('/dossiers/{id}/valider', [AgentDossierActionController::class, 'valider'])->name('dossiers.valider');
     Route::post('/dossiers/{id}/rejeter', [AgentDossierActionController::class, 'rejeter'])->name('dossiers.rejeter');
     Route::post('/dossiers/{id}/affecter', [AgentDossierActionController::class, 'affecter'])->name('dossiers.affecter');
-
+    Route::post('/dossiers/{id}/incomplet', [AgentDossierActionController::class, 'marquerIncomplet'])->name('dossiers.incomplet');
+    
+    // Pièces jointes
+    Route::get('/dossiers/{dossierId}/pieces/{pieceId}/download', [PieceController::class, 'download'])->name('dossiers.pieces.download');
+    
     // Notifications
     Route::get('/notifications', [AgentNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [AgentNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [AgentNotificationController::class, 'markAsRead'])->name('notifications.read');
 });
-
 // --------------------
 // ROUTES ADMIN
 // --------------------
