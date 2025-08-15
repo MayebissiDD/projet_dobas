@@ -2,7 +2,11 @@ import React from 'react';
 import AgentLayout from '@/Layouts/AgentLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+<<<<<<< HEAD
 import { Eye, Activity, Users, FileText } from 'lucide-react';
+=======
+import { Eye, School } from 'lucide-react';
+>>>>>>> e970dd4
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +102,7 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
           </Card>
         </div>
         
+<<<<<<< HEAD
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Table des derniers dossiers */}
           <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
@@ -109,6 +114,23 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
             </div>
             <Table>
               <TableHeader>
+=======
+        {/* Table des derniers dossiers */}
+        <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Derniers dossiers reçus</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Étudiant</TableHead>
+                <TableHead>École souhaitée</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {dossiers.length === 0 && (
+>>>>>>> e970dd4
                 <TableRow>
                   <TableHead>Étudiant</TableHead>
                   <TableHead>Bourse</TableHead>
@@ -116,6 +138,7 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
                   <TableHead>Date</TableHead>
                   <TableHead className="text-center">Action</TableHead>
                 </TableRow>
+<<<<<<< HEAD
               </TableHeader>
               <TableBody>
                 {dossiers.length === 0 && (
@@ -175,6 +198,43 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
               </p>
             )}
           </div>
+=======
+              )}
+              {dossiers.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell>{d.nom} {d.prenom}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <School className="h-4 w-4 mr-1 text-gray-500" />
+                      {d.etablissement || d.ecole?.nom || '—'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={
+                      d.statut === 'accepte' ? 'text-green-600 font-semibold' :
+                      d.statut === 'rejete' ? 'text-red-600 font-semibold' :
+                      d.statut === 'incomplet' ? 'text-yellow-500 font-semibold' :
+                      'text-blue-600 font-semibold'
+                    }>
+                      {d.statut === 'accepte' ? 'Validé' : 
+                       d.statut === 'rejete' ? 'Rejeté' : 
+                       d.statut === 'incomplet' ? 'Incomplet' : 
+                       'En attente'}
+                    </span>
+                  </TableCell>
+                  <TableCell>{d.date_soumission ? new Date(d.date_soumission).toLocaleDateString('fr-FR') : '—'}</TableCell>
+                  <TableCell className="text-center">
+                    <Link href={route('agent.dossiers.show', d.id)}>
+                      <Button variant="outline" size="sm">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+>>>>>>> e970dd4
         </div>
       </div>
     </AgentLayout>

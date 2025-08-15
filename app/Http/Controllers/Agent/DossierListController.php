@@ -14,14 +14,8 @@ class DossierListController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Dossier::with(['etudiant', 'bourse', 'ecole', 'filiere', 'agent']);
-        
-        // Si l'agent n'est pas admin, ne montrer que les dossiers qui lui sont assignés
-        if (!Auth::user()->hasRole('admin')) {
-            $query->where('agent_id', Auth::id());
-        }
-        
-        // Filtres
+        $query = Dossier::query()->with('bourse');
+
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
@@ -63,20 +57,14 @@ class DossierListController extends Controller
 
     public function show($id)
     {
-        $dossier = Dossier::with(['etudiant', 'bourse', 'ecole', 'filiere', 'pieces', 'historique.modifiePar', 'commentaires.user'])
-            ->findOrFail($id);
-            
-        Gate::authorize('view', $dossier);
-        
-        $ecoles = Ecole::withCount('dossiers')
-            ->get()
-            ->map(function ($ecole) {
-                $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers_count;
-                return $ecole;
-            });
-            
-        $bourses = \App\Models\Bourse::all(['id', 'nom', 'type_bourse']);
-        
+        $dossier = Dossier::findOrFail($id);
+        $this->authorize('view', $dossier);
+
+        $ecoles = Ecole::all()->map(function ($ecole) {
+            $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
+            return $ecole;
+        });
+
         \App\Services\ActivityLogger::log(
             'view_dossier_details',
             Dossier::class,
@@ -93,15 +81,7 @@ class DossierListController extends Controller
 
     public function apiList()
     {
-        $query = Dossier::with(['etudiant', 'bourse', 'ecole', 'filiere']);
-        
-        // Si l'agent n'est pas admin, ne montrer que les dossiers qui lui sont assignés
-        if (!Auth::user()->hasRole('admin')) {
-            $query->where('agent_id', Auth::id());
-        }
-        
-        $dossiers = $query->latest()->paginate(20);
-        
+        $dossiers = Dossier::with(['bourse', 'user'])->latest()->paginate(20);
         return response()->json(['dossiers' => $dossiers]);
     }
 

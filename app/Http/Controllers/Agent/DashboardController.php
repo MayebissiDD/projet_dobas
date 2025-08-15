@@ -21,6 +21,7 @@ class DashboardController extends Controller
             abort(403, 'Accès non autorisé');
         }
         
+<<<<<<< HEAD
         // Récupération des dossiers assignés à l'agent ou tous les dossiers si l'agent a la permission
         $query = Dossier::query();
         
@@ -28,6 +29,13 @@ class DashboardController extends Controller
         if (!$user->hasRole('admin')) {
             $query->where('agent_id', $user->id);
         }
+=======
+        // Récupération des derniers dossiers avec leurs pièces
+        $dossiers = Dossier::with(['bourse', 'pieces'])
+                          ->latest()
+                          ->take(10)
+                          ->get();
+>>>>>>> e970dd4
         
         // Statistiques par statut
         $stats = [
@@ -41,6 +49,7 @@ class DashboardController extends Controller
             'total' => (clone $query)->count(),
         ];
         
+<<<<<<< HEAD
         // Derniers dossiers
         $dossiers = (clone $query)->with(['etudiant', 'bourse', 'ecole', 'filiere'])
             ->latest()
@@ -54,6 +63,8 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
         
+=======
+>>>>>>> e970dd4
         return Inertia::render('Agent/Dashboard', [
             'dossiers' => $dossiers,
             'stats' => $stats,

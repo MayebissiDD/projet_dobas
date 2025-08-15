@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Dossier;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class DossierPolicy
 {
