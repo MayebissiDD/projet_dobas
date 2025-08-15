@@ -23,6 +23,15 @@ class PieceController extends Controller
                               ->where('id', $pieceId)
                               ->firstOrFail();
         
-        return Storage::download($piece->fichier, $piece->nom_original);
+        // Vérifier si le fichier existe
+        if (!Storage::disk('public')->exists($piece->fichier)) {
+            abort(404, 'Fichier non trouvé');
+        }
+        
+        // Obtenir le type MIME du fichier
+        $mimeType = Storage::disk('public')->mimeType($piece->fichier);
+        
+        // Télécharger le fichier avec son nom original
+        return Storage::disk('public')->download($piece->fichier, $piece->nom_original, ['Content-Type' => $mimeType]);
     }
 }

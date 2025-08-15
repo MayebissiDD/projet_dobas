@@ -47,10 +47,18 @@ class DossierListController extends Controller
 
     public function show($id)
     {
-        $dossier = Dossier::with(['bourse', 'pieces', 'etudiant', 'historique.modifiePar', 'commentaires.user'])->findOrFail($id);
+        $dossier = Dossier::with([
+            'bourse',
+            'pieces.piece',  // Charger la relation avec la table pieces
+            'etudiant',
+            'historique.modifiePar'
+        ])->findOrFail($id);
 
-        // Si vous n'utilisez pas les policies, commentez ou supprimez cette ligne
-        // $this->authorize('view', $dossier);
+        // Vérification simple d'autorisation
+        $user = auth()->user();
+        if (!$user || !$user->hasRole('agent')) {
+            abort(403, 'Accès non autorisé');
+        }
 
         $ecoles = Ecole::all()->map(function ($ecole) {
             $ecole->placesRestantes = $ecole->capacite - $ecole->dossiers()->count();

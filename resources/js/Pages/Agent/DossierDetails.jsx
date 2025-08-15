@@ -1,40 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import AgentLayout from '@/Layouts/AgentLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, School } from 'lucide-react';
+import { Download, Eye, FileText } from 'lucide-react';
 import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function DossierDetails({ dossier, ecoles }) {
-  const [selected, setSelected] = useState({
-    ecole_id: dossier.ecole_id || '',
-    filiere: dossier.filiere_souhaitee || ''
-  });
-  const [error, setError] = useState('');
-  const [showAffectationForm, setShowAffectationForm] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  function handleEcoleChange(e) {
-    setSelected({ ...selected, ecole_id: e.target.value, filiere: '' });
-  }
-
-  function handleFiliereChange(e) {
-    setSelected({ ...selected, filiere: e.target.value });
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!selected.ecole_id || !selected.filiere) {
-      setError('Veuillez sélectionner une école et une filière.');
-      return;
-    }
+  const handlePreview = (piece) => {
+    // Vérifier si le fichier est un PDF ou une image pour la prévisualisation
+    const fileExtension = piece.fichier.split('.').pop().toLowerCase();
+    const previewableTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif'];
     
-    router.post(route('agent.dossiers.affecter', dossier.id), selected, {
-      onSuccess: () => {
-        setShowAffectationForm(false);
-        setError('');
-      }
-    });
-  }
+    if (previewableTypes.includes(fileExtension)) {
+      setPreviewFile(piece);
+      setShowPreviewModal(true);
+    } else {
+      // Si le fichier n'est pas prévisualisable, le télécharger directement
+      window.open(route('agent.dossiers.pieces.download', {
+        dossierId: dossier.id,
+        pieceId: piece.id
+      }), '_blank');
+    }
+  };
+
+  // Fonction pour générer l'URL du fichier
+  const getFileUrl = (filePath) => {
+    return `/storage/${filePath}`;
+  };
 
   return (
     <AgentLayout>
@@ -46,11 +42,14 @@ export default function DossierDetails({ dossier, ecoles }) {
           <p className="text-zinc-600 dark:text-zinc-400">
             Statut: <span className={`font-semibold ${
               dossier.statut === 'accepte' ? 'text-green-600' :
-              dossier.statut === 'rejete' ? 'text-red-600' :
+              dossier.statut === 'refuse' ? 'text-red-600' :
               dossier.statut === 'incomplet' ? 'text-yellow-500' :
               'text-blue-600'
             }`}>
-              {dossier.statut}
+              {dossier.statut === 'accepte' ? 'Accepté' : 
+               dossier.statut === 'refuse' ? 'Rejeté' :
+               dossier.statut === 'incomplet' ? 'Incomplet' :
+               dossier.statut}
             </span>
           </p>
         </div>
@@ -86,10 +85,7 @@ export default function DossierDetails({ dossier, ecoles }) {
                   </div>
                   <div>
                     <p className="text-sm text-zinc-500">École souhaitée</p>
-                    <p className="font-medium flex items-center">
-                      <School className="h-4 w-4 mr-1" />
-                      {dossier.etablissement || dossier.ecole?.nom || '—'}
-                    </p>
+                    <p className="font-medium">{dossier.etablissement || dossier.ecole?.nom || '—'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-zinc-500">Filière souhaitée</p>
@@ -105,74 +101,6 @@ export default function DossierDetails({ dossier, ecoles }) {
               </CardContent>
             </Card>
             
-            {/* Formulaire d'affectation */}
-            {dossier.statut === 'en_attente' || dossier.statut === 'incomplet' ? (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-center">
-                    Affectation à une école
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowAffectationForm(!showAffectationForm)}
-                    >
-                      {showAffectationForm ? 'Masquer' : 'Afficher'} le formulaire
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                {showAffectationForm && (
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <label className="block font-medium mb-1">École d'affectation</label>
-                        <select 
-                          value={selected.ecole_id} 
-                          onChange={handleEcoleChange} 
-                          className="w-full border rounded p-2"
-                        >
-                          <option value="">Sélectionner une école</option>
-                          {ecoles.map(e => (
-                            <option key={e.id} value={e.id} disabled={e.placesRestantes <= 0}>
-                              {e.nom} (places restantes : {e.placesRestantes})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      {selected.ecole_id && (
-                        <div>
-                          <label className="block font-medium mb-1">Filière</label>
-                          <select 
-                            value={selected.filiere} 
-                            onChange={handleFiliereChange} 
-                            className="w-full border rounded p-2"
-                          >
-                            <option value="">Sélectionner une filière</option>
-                            {(ecoles.find(e => e.id == selected.ecole_id)?.filieres || '').split(',').map((f, i) => (
-                              <option key={i} value={f.trim()}>{f.trim()}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      
-                      {error && <div className="text-red-500 text-sm">{error}</div>}
-                      
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => setShowAffectationForm(false)}
-                        >
-                          Annuler
-                        </Button>
-                        <Button type="submit">Affecter</Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                )}
-              </Card>
-            ) : null}
-            
             {/* Pièces jointes */}
             <Card className="mt-6">
               <CardHeader>
@@ -185,21 +113,36 @@ export default function DossierDetails({ dossier, ecoles }) {
                       <div key={piece.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
                         <div className="flex items-center">
                           <FileText className="h-5 w-5 text-zinc-500 mr-2" />
-                          <span>{piece.nom_piece}</span>
+                          <div>
+                            <span className="font-medium">{piece.piece?.nom || piece.nom_original}</span>
+                            <p className="text-xs text-zinc-500">
+                              {piece.type_mime || 'Type inconnu'} • {(piece.taille / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
                         </div>
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="sm"
-                        >
-                          <a href={route('agent.dossiers.pieces.download', {
-                            dossierId: dossier.id,
-                            pieceId: piece.id
-                          })}>
-                            <Download className="h-4 w-4 mr-1" />
-                            Télécharger
-                          </a>
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePreview(piece)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Voir
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                          >
+                            <a href={route('agent.dossiers.pieces.download', {
+                              dossierId: dossier.id,
+                              pieceId: piece.id
+                            })}>
+                              <Download className="h-4 w-4 mr-1" />
+                              Télécharger
+                            </a>
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -217,28 +160,26 @@ export default function DossierDetails({ dossier, ecoles }) {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {dossier.statut === 'en_attente' || dossier.statut === 'incomplet' ? (
+                {dossier.statut === 'en_attente' && (
                   <>
                     <Button className="w-full" asChild>
                       <Link href={route('agent.dossiers.valider', dossier.id)} method="post">
                         Valider le dossier
                       </Link>
                     </Button>
+                    
                     <Button variant="outline" className="w-full" asChild>
-                      <Link href={route('agent.dossiers.incomplet', dossier.id)} method="post">
-                        Marquer comme incomplet
-                      </Link>
-                    </Button>
-                    <Button variant="destructive" className="w-full" asChild>
                       <Link href={route('agent.dossiers.rejeter', dossier.id)} method="post">
                         Rejeter le dossier
                       </Link>
                     </Button>
+                    
+                    <Button variant="secondary" className="w-full" asChild>
+                      <Link href={route('agent.dossiers.incomplet', dossier.id)} method="post">
+                        Marquer comme incomplet
+                      </Link>
+                    </Button>
                   </>
-                ) : (
-                  <p className="text-sm text-zinc-500">
-                    Ce dossier a déjà été traité et ne peut plus être modifié.
-                  </p>
                 )}
               </CardContent>
             </Card>
@@ -279,6 +220,42 @@ export default function DossierDetails({ dossier, ecoles }) {
           </div>
         </div>
       </div>
+      
+      {/* Modal de prévisualisation */}
+      {showPreviewModal && previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">
+                {previewFile.piece?.nom || previewFile.nom_original}
+              </h3>
+              <Button variant="outline" onClick={() => setShowPreviewModal(false)}>
+                Fermer
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              {previewFile.fichier && (
+                <iframe 
+                  src={getFileUrl(previewFile.fichier)} 
+                  className="w-full h-full border-0"
+                  title={previewFile.piece?.nom || previewFile.nom_original}
+                />
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <Button asChild>
+                <a href={route('agent.dossiers.pieces.download', {
+                  dossierId: dossier.id,
+                  pieceId: previewFile.id
+                })}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Télécharger
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AgentLayout>
   );
 }
