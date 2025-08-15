@@ -46,7 +46,7 @@ use App\Http\Controllers\Agent\{
 };
 
 // Étudiant
-use App\Http\Controllers\Etudiant\EtudiantDossierController;
+use App\Http\Controllers\Student\EtudiantDossierController;
 use App\Http\Controllers\Student\{
     EtudiantDashboardController,
     PaiementController as StudentPaiementController,
@@ -175,11 +175,20 @@ Route::prefix('agent')->name('agent.')->middleware(['auth:web', 'role:agent'])->
     Route::post('/dossiers/{id}/valider', [AgentDossierActionController::class, 'valider'])->name('dossiers.valider');
     Route::post('/dossiers/{id}/rejeter', [AgentDossierActionController::class, 'rejeter'])->name('dossiers.rejeter');
     Route::post('/dossiers/{id}/affecter', [AgentDossierActionController::class, 'affecter'])->name('dossiers.affecter');
+    Route::post('/dossiers/{id}/reorienter', [AgentDossierActionController::class, 'reorienter'])->name('dossiers.reorienter');
 
     // Notifications
     Route::get('/notifications', [AgentNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [AgentNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [AgentNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('/agent/notifications', [AgentNotificationController::class, 'index'])->name('agent.notifications');
+    Route::post('/agent/notifications/markAllAsRead', [AgentNotificationController::class, 'markAllAsRead'])->name('agent.notifications.markAllAsRead');
+    Route::post('/agent/notifications/markAsRead', [AgentNotificationController::class, 'markAsRead'])->name('agent.notifications.markAsRead');
+    Route::delete('/agent/notifications/{id}', [AgentNotificationController::class, 'destroy'])->name('agent.notifications.destroy');
+    // Profil
+    Route::get('/profil', [\App\Http\Controllers\Auth\UserProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profil', [\App\Http\Controllers\Auth\UserProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profil/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('profile.password');
 });
 
 // --------------------
@@ -197,6 +206,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:web', 'role:admin'])->
     Route::get('/dossiers', [AdminDossierController::class, 'index'])->name('dossiers.index');
     Route::get('/dossiers/{id}', [AdminDossierController::class, 'show'])->name('dossiers.show');
     Route::post('/dossiers/{dossier}/status', [AdminDossierController::class, 'updateStatus'])->name('dossiers.update-status');
+    Route::post('/dossiers/batch-validate', [AdminDossierController::class, 'batchValidate'])->name('dossiers.batch-validate');
+    Route::get('/dossiers/print-list', [AdminDossierController::class, 'printList'])->name('dossiers.print-list');
     Route::post('/dossiers/{dossier}/comment', [AdminDossierController::class, 'addComment'])->name('dossiers.add-comment');
     Route::post('/dossiers/{dossier}/notify', [AdminDossierController::class, 'sendNotification'])->name('dossiers.send-notification');
     Route::get('/dossiers/{dossier}/pieces/{piece}/download', [AdminDossierController::class, 'downloadPiece'])->name('dossiers.download-piece');
@@ -225,6 +236,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:web', 'role:admin'])->
 
     // Rapports personnalisés
     Route::post('/generate-report', [AdminDossierController::class, 'generateReport'])->name('generate-report');
+
+    // Profil
+    Route::get('/profil', [\App\Http\Controllers\Auth\UserProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profil', [\App\Http\Controllers\Auth\UserProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profil/password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('profile.password');
 });
 
 // Routes de retour pour les paiements

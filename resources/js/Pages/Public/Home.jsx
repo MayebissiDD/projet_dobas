@@ -55,8 +55,8 @@ export default function Home() {
   const services = [
     {
       icon: BookOpen,
-      title: "Recherche de bourses",
-      description: "Consultez et comparez toutes les bourses et aides scolaires accessibles selon votre profil.",
+      title: "Orientation et information",
+      description: "Orienter les bacheliers dans le choix de leur formation, afin de garantir de garantir une insertion professionnelle.",
       color: "bg-green-50 text-green-700 border-green-200",
       iconColor: "text-green-600"
     },
@@ -74,13 +74,7 @@ export default function Home() {
       color: "bg-red-50 text-red-700 border-red-200",
       iconColor: "text-red-600"
     },
-    {
-      icon: CheckCircle,
-      title: "Processus simplifié",
-      description: "Un dossier unique, des démarches centralisées et un suivi transparent.",
-      color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      iconColor: "text-emerald-600"
-    },
+  
   ]
 
   const testimonials = [

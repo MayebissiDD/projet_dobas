@@ -12,7 +12,9 @@ use App\Notifications\NotificationPersonnalisee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use PDF;
 
 class DossierController extends Controller
 {
@@ -29,21 +31,19 @@ class DossierController extends Controller
         Gate::authorize('viewAny', Dossier::class);
         
         $query = Dossier::with(['etudiant', 'pieces', 'paiements'])
+            ->whereIn('statut', ['accepte', 'valide'])
             ->orderBy('created_at', 'desc');
-            
+        
         // Filtres
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
-        
         if ($request->filled('type_bourse')) {
             $query->where('type_bourse', $request->type_bourse);
         }
-        
         if ($request->filled('etablissement')) {
             $query->where('etablissement', 'like', '%' . $request->etablissement . '%');
         }
-        
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -97,37 +97,123 @@ class DossierController extends Controller
         Gate::authorize('update', $dossier);
         
         $request->validate([
-            'statut' => 'required|in:en_attente,en_cours,accepte,refuse,incomplet',
+            'statut' => 'required|in:en_attente,en_cours,accepte,refuse,incomplet,valide',
             'commentaire' => 'nullable|string|max:1000',
             'raison_refus' => 'required_if:statut,refuse|string|max:500'
         ]);
         
         $ancienStatut = $dossier->statut;
         
-        // Mettre à jour le dossier
-        $dossier->update([
-            'statut' => $request->statut,
-            'commentaire_agent' => $request->commentaire,
-            'raison_refus' => $request->raison_refus,
-            'agent_id' => auth()->id(),
-            'date_decision' => now()
-        ]);
-        
-        // Enregistrer dans l'historique
-        HistoriqueStatutDossier::create([
-            'dossier_id' => $dossier->id,
-            'ancien_statut' => $ancienStatut,
-            'nouveau_statut' => $request->statut,
-            'motif' => $request->commentaire,
-            'modifie_par' => auth()->id()
-        ]);
-        
-        // Notifier l'étudiant de la décision
-        if ($dossier->etudiant && in_array($request->statut, ['accepte', 'refuse'])) {
-            $dossier->etudiant->notify(new DecisionCandidature($dossier));
-        }
+        DB::transaction(function () use ($dossier, $request, $ancienStatut) {
+            // Mettre à jour le dossier
+            $dossier->update([
+                'statut' => $request->statut,
+                'commentaire_agent' => $request->commentaire,
+                'raison_refus' => $request->raison_refus,
+                'agent_id' => auth()->id(),
+                'date_decision' => now()
+            ]);
+            
+            // Enregistrer dans l'historique
+            HistoriqueStatutDossier::create([
+                'dossier_id' => $dossier->id,
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $request->statut,
+                'motif' => $request->commentaire,
+                'modifie_par' => auth()->id()
+            ]);
+            
+            // Notifier l'étudiant de la décision
+            if ($dossier->etudiant && in_array($request->statut, ['accepte', 'refuse', 'valide'])) {
+                $dossier->etudiant->notify(new DecisionCandidature($dossier));
+            }
+        });
         
         return redirect()->back()->with('success', 'Statut mis à jour avec succès');
+    }
+
+    /**
+     * Validation/signer plusieurs dossiers à la fois
+     */
+    public function batchValidate(Request $request)
+    {
+        Gate::authorize('batchValidate', Dossier::class);
+        
+        $request->validate([
+            'dossier_ids' => 'required|array',
+            'dossier_ids.*' => 'exists:dossiers,id',
+        ]);
+        
+        $dossiers = Dossier::whereIn('id', $request->dossier_ids)
+            ->where('statut', 'accepte')
+            ->get();
+            
+        if ($dossiers->isEmpty()) {
+            return back()->with('error', 'Aucun dossier valide à traiter.');
+        }
+        
+        DB::transaction(function () use ($dossiers) {
+            foreach ($dossiers as $dossier) {
+                $ancienStatut = $dossier->statut;
+                
+                $dossier->update([
+                    'statut' => 'valide',
+                    'date_validation_admin' => now(),
+                    'admin_id' => auth()->id(),
+                ]);
+                
+                HistoriqueStatutDossier::create([
+                    'dossier_id' => $dossier->id,
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'valide',
+                    'motif' => 'Validation finale par l\'admin',
+                    'modifie_par' => auth()->id()
+                ]);
+                
+                // Notifier l'étudiant de la réussite
+                if ($dossier->etudiant) {
+                    $dossier->etudiant->notify(new DecisionCandidature($dossier));
+                }
+            }
+        });
+        
+        return back()->with('success', $dossiers->count() . ' dossier(s) validé(s) et notification(s) envoyée(s).');
+    }
+
+    /**
+     * Imprimer la liste définitive des boursiers par école ou filière
+     */
+    public function printList(Request $request)
+    {
+        Gate::authorize('printList', Dossier::class);
+        
+        $request->validate([
+            'type' => 'required|in:ecole,filiere',
+            'id' => 'required|integer',
+        ]);
+        
+        $query = Dossier::where('statut', 'valide')->with(['etudiant', 'bourse', 'ecole', 'filiere']);
+        
+        if ($request->type === 'ecole') {
+            $query->where('ecole_id', $request->id);
+        } else {
+            $query->where('filiere_id', $request->id);
+        }
+        
+        $dossiers = $query->get();
+        
+        if ($dossiers->isEmpty()) {
+            return back()->with('error', 'Aucun dossier validé trouvé pour cette sélection.');
+        }
+        
+        $typeLabel = $request->type === 'ecole' ? 'École' : 'Filière';
+        $label = $request->type === 'ecole' 
+            ? optional($dossiers->first()->ecole)->nom 
+            : optional($dossiers->first()->filiere)->nom;
+        
+        $pdf = PDF::loadView('admin.liste_boursiers', compact('dossiers', 'typeLabel', 'label'));
+        
+        return $pdf->download('liste_boursiers_' . $typeLabel . '_' . $label . '.pdf');
     }
 
     /**
@@ -304,6 +390,7 @@ class DossierController extends Controller
             'refuses' => Dossier::where('statut', 'refuse')->count(),
             'en_cours' => Dossier::where('statut', 'en_cours')->count(),
             'incomplets' => Dossier::where('statut', 'incomplet')->count(),
+            'valide' => Dossier::where('statut', 'valide')->count(),
             'paiements_recus' => Dossier::where('statut_paiement', 'paye')->count(),
             'paiements_attente' => Dossier::where('statut_paiement', 'en_attente')->count(),
             'bourses_locales' => Dossier::where('type_bourse', 'locale')->count(),
@@ -327,6 +414,7 @@ class DossierController extends Controller
             'acceptes' => Dossier::where('statut', 'accepte')->count(),
             'refuses' => Dossier::where('statut', 'refuse')->count(),
             'incomplets' => Dossier::where('statut', 'incomplet')->count(),
+            'valide' => Dossier::where('statut', 'valide')->count(),
         ];
     }
     
@@ -404,8 +492,7 @@ class DossierController extends Controller
     
     private function exportToPdf($data, $type)
     {
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.reports.pdf', compact('data', 'type'));
+        $pdf = PDF::loadView('admin.reports.pdf', compact('data', 'type'));
         
         return $pdf->download("rapport_candidatures_{$type}_" . date('Y-m-d') . ".pdf");
     }

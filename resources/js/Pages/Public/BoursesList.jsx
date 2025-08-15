@@ -91,10 +91,10 @@ export default function BoursePage() {
           {/* Statistics Section */}
           <motion.section {...fadeIn} className="grid md:grid-cols-4 gap-6">
             {[
-              { icon: Users, number: "2,500+", label: "Étudiants aidés" },
-              { icon: Award, number: "150+", label: "Bourses disponibles" },
+              { icon: Users, number: "2 000+", label: "Étudiants aidés" },
+              { icon: Award, number: "03+", label: "Types Bourses" },
               { icon: Globe2, number: "45", label: "Pays partenaires" },
-              { icon: GraduationCap, number: "85%", label: "Taux de réussite" }
+              { icon: GraduationCap, number: "95%", label: "Taux de réussite" }
             ].map((stat, index) => (
               <Card key={index} className="text-center p-6 bg-white/70 dark:bg-zinc-800/70 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-all hover:scale-105">
                 <stat.icon className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-3" />
@@ -156,7 +156,7 @@ export default function BoursePage() {
                           <Globe className="w-6 h-6" />
                         </div>
                         <CardTitle className="text-2xl font-bold">
-                          Bourses Internationales
+                          Bourses Etrangères
                         </CardTitle>
                       </div>
                     </CardHeader>
@@ -195,10 +195,10 @@ export default function BoursePage() {
               <motion.div {...staggerContainer}>
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
                   {[
-                    { icon: FileText, title: "Relevés de notes", desc: "Bulletins officiels des 3 dernières années" },
-                    { icon: BadgeCheck, title: "Lettre de motivation", desc: "Projet d'études personnalisé et convaincant" },
+                    { icon: FileText, title: "Relevés de notes", desc: "Attestant la moyenne au BAC" },
+                    { icon: BadgeCheck, title: "Lettre de motivation", desc: "Relevé de notes" },
                     { icon: IdCard, title: "Pièce d'identité", desc: "Document officiel en cours de validité" },
-                    { icon: GraduationCap, title: "Certificat de scolarité", desc: "Attestation d'inscription actuelle" },
+                    { icon: GraduationCap, title: "Attestation du BAC", desc: "Document légalisé" },
                     { icon: ClipboardCheck, title: "Formulaire DOBAS", desc: "Dossier officiel de demande de bourse" },
                     { icon: Calendar, title: "Planning", desc: "Dates limites et échéances importantes" }
                   ].map((item, index) => (
@@ -287,7 +287,7 @@ export default function BoursePage() {
           </motion.section>
 
           {/* CTA Section Enhanced */}
-          <motion.section {...fadeIn} className="text-center bg-gradient-to-r from-green-600 to-blue-600 text-white p-12 rounded-2xl shadow-2xl">
+          {/* <motion.section {...fadeIn} className="text-center bg-gradient-to-r from-green-600 to-blue-600 text-white p-12 rounded-2xl shadow-2xl">
             <h2 className="text-3xl font-bold mb-4">Prêt à Commencer Votre Parcours ?</h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
               Ne laissez pas passer cette opportunité unique. Votre avenir commence maintenant.
@@ -301,7 +301,7 @@ export default function BoursePage() {
                 Nous contacter
               </Button>
             </div>
-          </motion.section>
+          </motion.section> */}
           
         </div>
       </div>

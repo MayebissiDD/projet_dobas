@@ -40,12 +40,15 @@ class Dossier extends Model
         'email',
         'telephone',
         'photo_identite',
+        'transaction_id',
+        'date_paiement'
     ];
 
     protected $casts = [
         'date_soumission' => 'datetime',
-        'date_decision' => 'date',
+        'date_decision' => 'datetime',
         'date_naissance' => 'date',
+        'date_paiement' => 'datetime',
         'cas_social' => 'boolean',
     ];
 
@@ -78,11 +81,12 @@ class Dossier extends Model
     {
         return $this->hasMany(DossierPiece::class);
     }
-    // Dans le modèle Dossier
+
     public function getPhotoUrlAttribute()
     {
         return $this->photo_identite ? asset('storage/' . $this->photo_identite) : null;
     }
+
     public function paiements(): HasMany
     {
         return $this->hasMany(Paiement::class);

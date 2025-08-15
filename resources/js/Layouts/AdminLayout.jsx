@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -26,15 +27,16 @@ export default function AdminLayout({ children }) {
     post("/logout");
   };
 
-  const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
-    { href: "/admin/dossiers", label: "Dossiers", icon: FileText },
-    { href: "/admin/rapports", label: "Rapports", icon: FileBarChart },
-    { href: "/admin/bourses", label: "Bourses", icon: GraduationCap },
-    { href: "/admin/ecoles", label: "Écoles Partenaires", icon: School },
-    { href: "/admin/notifications", label: "Notifications", icon: Bell },
-  ];
+    const navItems = [
+        { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/admin/utilisateurs", label: "Utilisateurs", icon: Users },
+        { href: "/admin/dossiers", label: "Dossiers", icon: FileText },
+        { href: "/admin/rapports", label: "Rapports", icon: FileBarChart },
+        { href: "/admin/bourses", label: "Bourses", icon: GraduationCap },
+        { href: "/admin/ecoles", label: "Écoles Partenaires", icon: School },
+        { href: "/admin/notifications", label: "Notifications", icon: Bell },
+        { href: "/admin/profil", label: "Mon profil", icon: User },
+    ];
 
   return (
     <div className="min-h-screen flex bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">

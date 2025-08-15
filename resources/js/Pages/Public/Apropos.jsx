@@ -194,7 +194,7 @@ export default function Apropos() {
             <div className="grid items-center gap-12 md:grid-cols-2">
               <div className="space-y-6">
                 <h2 className="mb-6 text-4xl font-bold text-green-700">
-                  Mot du Directeur Général
+                  Mot de la Directrice 
                 </h2>
                 <div className="space-y-4 prose prose-lg text-gray-700">
                   <p className="text-lg leading-relaxed">

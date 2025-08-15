@@ -61,7 +61,7 @@ export default function Footer() {
         <div>
           <h3 className="text-lg font-semibold mb-2">Contact</h3>
           <p className="flex items-center gap-2"><Mail size={16} /> <a href="mailto:contact@dobas.cg" className="underline">contact@dobas.cg</a></p>
-          <p className="flex items-center gap-2"><Phone size={16} /> +242 06 123 4567</p>
+          <p className="flex items-center gap-2"><Phone size={16} /> +242 06 440 70 66</p>
           <p className="flex items-center gap-2"><MapPin size={16} /> Brazzaville, Congo</p>
 
           <div className="flex gap-4 mt-4">
