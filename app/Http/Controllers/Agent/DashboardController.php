@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Dossier;
+use App\Models\HistoriqueStatutDossier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
@@ -21,24 +22,18 @@ class DashboardController extends Controller
             abort(403, 'Accès non autorisé');
         }
         
-<<<<<<< HEAD
-        // Récupération des dossiers assignés à l'agent ou tous les dossiers si l'agent a la permission
+        // Initialiser la requête pour les statistiques
         $query = Dossier::query();
         
-        // Si l'agent n'est pas admin, ne montrer que les dossiers qui lui sont assignés
-        if (!$user->hasRole('admin')) {
-            $query->where('agent_id', $user->id);
-        }
-=======
-        // Récupération des derniers dossiers avec leurs pièces
-        $dossiers = Dossier::with(['bourse', 'pieces'])
+        // Récupération des derniers dossiers avec leurs pièces, bourse et étudiant
+        $dossiers = Dossier::with(['bourse', 'pieces', 'etudiant'])
                           ->latest()
                           ->take(10)
                           ->get();
->>>>>>> e970dd4
         
         // Statistiques par statut
         $stats = [
+            'soumis' => (clone $query)->where('statut', 'soumis')->count(),
             'en_attente' => (clone $query)->where('statut', 'en_attente')->count(),
             'en_cours' => (clone $query)->where('statut', 'en_cours')->count(),
             'accepte' => (clone $query)->where('statut', 'accepte')->count(),
@@ -49,22 +44,21 @@ class DashboardController extends Controller
             'total' => (clone $query)->count(),
         ];
         
-<<<<<<< HEAD
-        // Derniers dossiers
-        $dossiers = (clone $query)->with(['etudiant', 'bourse', 'ecole', 'filiere'])
-            ->latest()
-            ->take(10)
-            ->get();
+        // Récupérer les activités récentes depuis l'historique des statuts
+        $recentActivities = HistoriqueStatutDossier::with(['dossier', 'modifiePar'])
+                                                   ->orderBy('modifie_le', 'desc')
+                                                   ->take(10)
+                                                   ->get()
+                                                   ->map(function ($activity) {
+                                                       return [
+                                                           'id' => $activity->id,
+                                                           'description' => "Le statut du dossier #{$activity->dossier_id} a été changé de \"{$activity->ancien_statut}\" à \"{$activity->nouveau_statut}\"",
+                                                           'created_at' => $activity->modifie_le,
+                                                           'dossier_id' => $activity->dossier_id,
+                                                           'modifie_par' => $activity->modifiePar->name ?? 'Système'
+                                                       ];
+                                                   });
         
-        // Activités récentes de l'agent
-        $recentActivities = \App\Models\ActivityLog::where('causer_type', Dossier::class)
-            ->where('causer_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get();
-        
-=======
->>>>>>> e970dd4
         return Inertia::render('Agent/Dashboard', [
             'dossiers' => $dossiers,
             'stats' => $stats,

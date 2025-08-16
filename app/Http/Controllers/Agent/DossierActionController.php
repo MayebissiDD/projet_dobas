@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
@@ -13,87 +12,83 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\DossierValideNotification;
 use App\Notifications\DossierRejeteNotification;
-<<<<<<< HEAD
-use App\Notifications\NotificationPersonnalisee;
-=======
-use App\Notifications\DossierIncompletNotification; // Ajout de cette ligne
->>>>>>> e970dd4
+use App\Notifications\DossierIncompletNotification;
+use App\Notifications\DossierReorienteNotification;
+use App\Services\MTNTindaService;
 
 class DossierActionController extends Controller
 {
-    public function __construct()
+    protected $mtnTindaService;
+    
+    public function __construct(MTNTindaService $mtnTindaService)
     {
         $this->middleware(['auth', 'role:agent']);
+        $this->mtnTindaService = $mtnTindaService;
     }
-
+    
+    /**
+     * Formater le numéro de téléphone pour l'envoi de SMS
+     *
+     * @param string $telephone
+     * @return string
+     */
+    private function formatPhoneNumberForSMS($telephone)
+    {
+        if (empty($telephone)) {
+            return '';
+        }
+        
+        // Supprimer tous les caractères non numériques
+        $telephone = preg_replace('/[^0-9]/', '', $telephone);
+        
+        // Si le numéro commence par +242, retirer le +
+        if (strpos($telephone, '242') === 0) {
+            return $telephone;
+        }
+        
+        // Si le numéro commence par 00242, retirer les 00
+        if (strpos($telephone, '00242') === 0) {
+            return substr($telephone, 2);
+        }
+        
+        // Si le numéro commence par 05, 06 ou 04, ajouter 242 au début
+        if (strpos($telephone, '05') === 0 || strpos($telephone, '06') === 0 || strpos($telephone, '04') === 0) {
+            return '242' . $telephone;
+        }
+        
+        // Pour tout autre format, retourner le numéro tel quel
+        return $telephone;
+    }
+    
     public function valider($id)
     {
         $dossier = Dossier::findOrFail($id);
         Gate::authorize('update', $dossier);
-
+        
         $ancienStatut = $dossier->statut;
-
-<<<<<<< HEAD
-        DB::transaction(function () use ($dossier, $ancienStatut) {
-            $dossier->statut = 'accepte'; // Utiliser 'accepte' au lieu de 'accepte'
-            $dossier->agent_id = auth()->id();
-            $dossier->date_decision = now();
-            $dossier->save();
-
-            // Enregistrer dans l'historique
-            HistoriqueStatutDossier::create([
-                'dossier_id' => $dossier->id,
-                'ancien_statut' => $ancienStatut,
-                'nouveau_statut' => 'accepte',
-                'motif' => 'Dossier validé par un agent',
-                'modifie_par' => auth()->id()
-            ]);
-
-            // Notifier l'étudiant
-            if ($dossier->etudiant) {
-                $dossier->etudiant->notify(new DossierValideNotification(
-                    optional($dossier->ecole)->nom,
-                    $dossier->filiere_souhaitee
-                ));
-            }
-
-            // Notifier les admins
-            $admins = User::role('admin')->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new DossierValideNotification(
-                    optional($dossier->ecole)->nom,
-                    $dossier->filiere_souhaitee
-                ));
-            }
-
-            \App\Services\ActivityLogger::log(
-                'validate_dossier',
-                Dossier::class,
-                $dossier->id,
-                "Dossier #{$dossier->id} validé par un agent."
-            );
-        });
-=======
-        $dossier->statut = 'accepte'; // Changé de 'accepte' à 'accepte' pour la cohérence
+        $dossier->statut = 'accepte';
         $dossier->save();
-
-        // Enregistrer dans l'historique
+        
+        // Enregistrer dans l'historique avec un motif plus court
         HistoriqueStatutDossier::create([
             'dossier_id' => $dossier->id,
             'ancien_statut' => $ancienStatut,
             'nouveau_statut' => 'accepte',
-            'motif' => 'Dossier validé par un agent',
+            'motif' => 'Validation du dossier',
             'modifie_par' => auth()->id()
         ]);
-
+        
         // Notifier l'étudiant
         if ($dossier->etudiant) {
             $dossier->etudiant->notify(new DossierValideNotification(
                 optional($dossier->ecole)->nom,
                 $dossier->filiere_souhaitee
             ));
+            
+            // Envoyer un SMS de validation
+            $this->envoyerSMSValidation($dossier);
         }
-
+        
         // Notifier les admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
@@ -102,119 +97,87 @@ class DossierActionController extends Controller
                 $dossier->filiere_souhaitee
             ));
         }
-
+        
         \App\Services\ActivityLogger::log(
             'validate_dossier',
             Dossier::class,
             $dossier->id,
             "Dossier #{$dossier->id} validé par un agent."
         );
->>>>>>> e970dd4
-
+        
         return back()->with('success', 'Dossier validé et notifications envoyées.');
     }
-
+    
     public function rejeter($id, Request $request)
     {
         $dossier = Dossier::findOrFail($id);
-<<<<<<< HEAD
-        Gate::authorize('update', $dossier);
-
-        $request->validate([
-            'motif' => 'required|string|max:500',
-        ]);
-
         $ancienStatut = $dossier->statut;
-
-        DB::transaction(function () use ($dossier, $request, $ancienStatut) {
-            $dossier->statut = 'rejete'; // Utiliser 'rejete' au lieu de 'refuse'
-            $dossier->raison_refus = $request->motif;
-            $dossier->agent_id = auth()->id();
-            $dossier->date_decision = now();
-            $dossier->save();
-
-            // Enregistrer dans l'historique
-            HistoriqueStatutDossier::create([
-                'dossier_id' => $dossier->id,
-                'ancien_statut' => $ancienStatut,
-                'nouveau_statut' => 'rejete',
-                'motif' => $request->motif,
-                'modifie_par' => auth()->id()
-            ]);
-
-            // Notifier l'étudiant
-            if ($dossier->etudiant) {
-                $dossier->etudiant->notify(new DossierRejeteNotification($request->motif));
-            }
-
-            // Notifier les admins
-            $admins = User::role('admin')->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new DossierRejeteNotification($request->motif));
-            }
-
-            \App\Services\ActivityLogger::log(
-                'reject_dossier',
-                Dossier::class,
-                $dossier->id,
-                "Dossier #{$dossier->id} rejeté par un agent."
-            );
-        });
-=======
-        $ancienStatut = $dossier->statut;
-
-        $dossier->statut = 'rejete'; // Changé de 'refuse' à 'rejete' pour la cohérence
+        
+        // Vérifier que le statut est valide pour éviter l'erreur de troncature
+        $dossier->statut = 'rejete'; // Assurez-vous que cette valeur est dans l'ENUM de la BD
         $dossier->raison_refus = $request->motif;
         $dossier->save();
-
+        
+        // Limiter la longueur du motif pour l'historique
+        $motifHistorique = strlen($request->motif) > 100 
+            ? substr($request->motif, 0, 97) . '...' 
+            : $request->motif;
+        
         // Enregistrer dans l'historique
         HistoriqueStatutDossier::create([
             'dossier_id' => $dossier->id,
             'ancien_statut' => $ancienStatut,
             'nouveau_statut' => 'rejete',
-            'motif' => $request->motif,
+            'motif' => $motifHistorique,
             'modifie_par' => auth()->id()
         ]);
-
+        
         // Notifier l'étudiant
         if ($dossier->etudiant) {
             $dossier->etudiant->notify(new DossierRejeteNotification($request->motif));
+            
+            // Envoyer un SMS de rejet
+            $this->envoyerSMSRejet($dossier, $request->motif);
         }
-
+        
         // Notifier les admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
             $admin->notify(new DossierRejeteNotification($request->motif));
         }
-
+        
         \App\Services\ActivityLogger::log(
             'reject_dossier',
             Dossier::class,
             $dossier->id,
             "Dossier #{$dossier->id} rejeté par un agent."
         );
->>>>>>> e970dd4
-
+        
         return back()->with('success', 'Dossier rejeté et notifications envoyées.');
     }
+    
     public function marquerIncomplet($id, Request $request)
     {
         $dossier = Dossier::findOrFail($id);
         $ancienStatut = $dossier->statut;
-
         $dossier->statut = 'incomplet';
         $dossier->commentaire_agent = $request->commentaire;
         $dossier->save();
-
+        
+        // Limiter la longueur du commentaire pour l'historique
+        $commentaireHistorique = strlen($request->commentaire) > 100 
+            ? substr($request->commentaire, 0, 97) . '...' 
+            : $request->commentaire;
+        
         // Enregistrer dans l'historique
         HistoriqueStatutDossier::create([
             'dossier_id' => $dossier->id,
             'ancien_statut' => $ancienStatut,
             'nouveau_statut' => 'incomplet',
-            'motif' => $request->commentaire,
+            'motif' => $commentaireHistorique,
             'modifie_par' => auth()->id()
         ]);
-
+        
         // Notifier l'étudiant
         if ($dossier->etudiant) {
             // Utiliser une notification générique ou créer une notification spécifique
@@ -223,8 +186,11 @@ class DossierActionController extends Controller
                 'incomplet',
                 $request->commentaire
             ));
+            
+            // Envoyer un SMS pour dossier incomplet
+            $this->envoyerSMSIncomplet($dossier, $request->commentaire);
         }
-
+        
         // Notifier les admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
@@ -234,17 +200,17 @@ class DossierActionController extends Controller
                 $request->commentaire
             ));
         }
-
+        
         \App\Services\ActivityLogger::log(
             'mark_incomplete_dossier',
             Dossier::class,
             $dossier->id,
             "Dossier #{$dossier->id} marqué comme incomplet par un agent."
         );
-
+        
         return back()->with('success', 'Dossier marqué comme incomplet et notification envoyée.');
     }
-
+    
     /**
      * Affecter un dossier à une école
      */
@@ -252,179 +218,355 @@ class DossierActionController extends Controller
     {
         $dossier = Dossier::findOrFail($id);
         Gate::authorize('update', $dossier);
-
+        
         $request->validate([
             'ecole_id' => 'required|exists:ecoles,id',
-            'filiere_id' => 'required|exists:filieres,id', // Ajout de la validation de la filière
+            'filiere_id' => 'required|exists:filieres,id',
         ]);
-
+        
         $ecole = Ecole::findOrFail($request->ecole_id);
-<<<<<<< HEAD
-        $filiere = Filiere::findOrFail($request->filiere_id);
-
-        // Vérifier que la filière appartient bien à l'école
-        if ($filiere->ecole_id !== $ecole->id) {
-            return back()->withErrors(['filiere_id' => "Cette filière n'appartient pas à l'école sélectionnée."]);
-        }
-=======
->>>>>>> e970dd4
-
+        
         // Vérifier la capacité de l'école
         $placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
         if ($placesRestantes <= 0) {
             return back()->withErrors(['ecole_id' => "Plus de places disponibles dans cette école."]);
         }
-
+        
         $ancienStatut = $dossier->statut;
-
-<<<<<<< HEAD
-        DB::transaction(function () use ($dossier, $request, $ecole, $filiere, $ancienStatut) {
-            $dossier->ecole_id = $ecole->id;
-            $dossier->filiere_id = $filiere->id; // Correction: utiliser filiere_id au lieu de filiere_souhaitee
-            $dossier->statut = 'accepte';
-            $dossier->agent_id = auth()->id();
-            $dossier->date_decision = now();
-            $dossier->save();
-
-            // Enregistrer dans l'historique
-            HistoriqueStatutDossier::create([
-                'dossier_id' => $dossier->id,
-                'ancien_statut' => $ancienStatut,
-                'nouveau_statut' => 'accepte',
-                'motif' => "Affectation à l'école {$ecole->nom}",
-                'modifie_par' => auth()->id()
-            ]);
-
-            // Notifier l'étudiant
-            if ($dossier->etudiant) {
-                $dossier->etudiant->notify(new DossierValideNotification($ecole->nom, $filiere->nom));
-            }
-
-            // Notifier les admins
-            $admins = User::role('admin')->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new DossierValideNotification($ecole->nom, $filiere->nom));
-            }
-
-            \App\Services\ActivityLogger::log(
-                'affect_dossier',
-                Dossier::class,
-                $dossier->id,
-                "Affectation du dossier #{$dossier->id} à l'école #{$ecole->id} ({$ecole->nom}) par un agent."
-            );
-        });
-
-        return back()->with('success', 'Dossier affecté à l\'école et notification envoyée.');
-    }
-
-    /**
-     * Réorienter une candidature vers une autre école/filière
-     */
-    public function reorienter(Request $request, $id)
-    {
-        $dossier = Dossier::findOrFail($id);
-        Gate::authorize('update', $dossier);
-
-        $request->validate([
-            'ecole_id' => 'required|exists:ecoles,id',
-            'filiere_id' => 'required|exists:filieres,id',
-            'motif' => 'nullable|string|max:500',
-        ]);
-
-        $ecole = Ecole::findOrFail($request->ecole_id);
-        $filiere = Filiere::findOrFail($request->filiere_id);
-
-        // Vérifier que la filière appartient bien à l'école
-        if ($filiere->ecole_id !== $ecole->id) {
-            return back()->withErrors(['filiere_id' => "Cette filière n'appartient pas à l'école sélectionnée."]);
-        }
-
-        $ancienEcole = optional($dossier->ecole)->nom;
-        $ancienneFiliere = optional($dossier->filiere)->nom;
-        $ancienStatut = $dossier->statut;
-
-        DB::transaction(function () use ($dossier, $request, $ecole, $filiere, $ancienEcole, $ancienneFiliere, $ancienStatut) {
-            $dossier->ecole_id = $request->ecole_id;
-            $dossier->filiere_id = $request->filiere_id;
-            $dossier->statut = 'reoriente';
-            $dossier->agent_id = auth()->id();
-            $dossier->date_decision = now();
-            $dossier->save();
-
-            // Enregistrer dans l'historique
-            HistoriqueStatutDossier::create([
-                'dossier_id' => $dossier->id,
-                'ancien_statut' => $ancienStatut,
-                'nouveau_statut' => 'reoriente',
-                'motif' => 'Réorientation vers une autre école/filière. ' . ($request->motif ?? ''),
-                'modifie_par' => auth()->id()
-            ]);
-
-            // Notifier l'étudiant
-            if ($dossier->etudiant) {
-                $dossier->etudiant->notify(new NotificationPersonnalisee(
-                    'Réorientation de votre candidature',
-                    "Votre candidature a été réorientée de {$ancienEcole} ({$ancienneFiliere}) vers {$ecole->nom} ({$filiere->nom}). " . ($request->motif ?? ''),
-                    'info',
-                    $dossier
-                ));
-            }
-
-            // Notifier les admins
-            $admins = User::role('admin')->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new NotificationPersonnalisee(
-                    'Réorientation d\'une candidature',
-                    "La candidature de {$dossier->etudiant->nom} {$dossier->etudiant->prenom} a été réorientée de {$ancienEcole} ({$ancienneFiliere}) vers {$ecole->nom} ({$filiere->nom}).",
-                    'info',
-                    $dossier
-                ));
-            }
-
-            \App\Services\ActivityLogger::log(
-                'reorient_dossier',
-                Dossier::class,
-                $dossier->id,
-                "Réorientation du dossier #{$dossier->id} de {$ancienEcole} vers {$ecole->nom} par un agent."
-            );
-        });
-
-        return back()->with('success', 'Candidature réorientée et notifications envoyées.');
-    }
-=======
         $dossier->ecole_id = $ecole->id;
         $dossier->filiere_souhaitee = $request->filiere;
         $dossier->statut = 'accepte';
         $dossier->save();
-
+        
+        // Créer un motif plus court pour l'historique
+        $motif = "Affectation à {$ecole->nom}";
+        if (strlen($motif) > 100) {
+            $motif = substr($motif, 0, 97) . '...';
+        }
+        
         // Enregistrer dans l'historique
         HistoriqueStatutDossier::create([
             'dossier_id' => $dossier->id,
             'ancien_statut' => $ancienStatut,
             'nouveau_statut' => 'accepte',
-            'motif' => "Affectation à l'école {$ecole->nom}",
+            'motif' => $motif,
             'modifie_par' => auth()->id()
         ]);
-
+        
         // Notifier l'étudiant
         if ($dossier->etudiant) {
             $dossier->etudiant->notify(new DossierValideNotification($ecole->nom, $request->filiere));
+            
+            // Envoyer un SMS d'affectation
+            $this->envoyerSMSAffectation($dossier, $ecole->nom, $request->filiere);
         }
-
+        
         // Notifier les admins
         $admins = User::role('admin')->get();
         foreach ($admins as $admin) {
             $admin->notify(new DossierValideNotification($ecole->nom, $request->filiere));
         }
-
+        
         \App\Services\ActivityLogger::log(
             'affect_dossier',
             Dossier::class,
             $dossier->id,
             "Affectation du dossier #{$dossier->id} à l'école #{$ecole->id} ({$ecole->nom}) par un agent."
         );
-
+        
         return back()->with('success', 'Dossier affecté à l\'école et notification envoyée.');
     }
->>>>>>> e970dd4
+    
+    /**
+     * Réorienter (refouler) un dossier vers une autre école/filière
+     */
+    public function reorienter(Request $request, $id)
+    {
+        $dossier = Dossier::findOrFail($id);
+        Gate::authorize('update', $dossier);
+        
+        $request->validate([
+            'ecole_id' => 'required|exists:ecoles,id',
+            'filiere_id' => 'required|exists:filieres,id',
+            'motif' => 'nullable|string|max:500',
+        ]);
+        
+        // Vérifier que la filière appartient bien à l'école sélectionnée
+        $filiere = Filiere::find($request->filiere_id);
+        if ($filiere->ecole_id != $request->ecole_id) {
+            return back()->withErrors([
+                'filiere_id' => 'La filière sélectionnée n\'appartient pas à l\'école choisie'
+            ]);
+        }
+        
+        $ecole = Ecole::findOrFail($request->ecole_id);
+        
+        // Vérifier la capacité de l'école
+        $placesRestantes = $ecole->capacite - $ecole->dossiers()->count();
+        if ($placesRestantes <= 0) {
+            return back()->withErrors(['ecole_id' => "Plus de places disponibles dans cette école."]);
+        }
+        
+        // Sauvegarder l'ancien statut pour l'historique
+        $ancienStatut = $dossier->statut;
+        $ancienneEcole = $dossier->ecole ? $dossier->ecole->nom : 'Non définie';
+        $ancienneFiliere = $dossier->filiere ? $dossier->filiere->nom : 'Non définie';
+        
+        // Mettre à jour le dossier
+        $dossier->ecole_id = $request->ecole_id;
+        $dossier->filiere_id = $request->filiere_id;
+        $dossier->statut = 'reoriente'; // Assurez-vous que cette valeur est dans l'ENUM de la BD
+        $dossier->save();
+        
+        // Créer un motif pour l'historique
+        $motifHistorique = "Réorientation de {$ancienneEcole} ({$ancienneFiliere}) vers {$ecole->nom} ({$filiere->nom})";
+        if ($request->motif) {
+            $motifHistorique .= ". Motif: " . $request->motif;
+        }
+        
+        // Limiter la longueur du motif pour l'historique
+        if (strlen($motifHistorique) > 100) {
+            $motifHistorique = substr($motifHistorique, 0, 97) . '...';
+        }
+        
+        // Enregistrer dans l'historique
+        HistoriqueStatutDossier::create([
+            'dossier_id' => $dossier->id,
+            'ancien_statut' => $ancienStatut,
+            'nouveau_statut' => 'reoriente',
+            'motif' => $motifHistorique,
+            'modifie_par' => auth()->id()
+        ]);
+        
+        // Notifier l'étudiant
+        if ($dossier->etudiant) {
+            $dossier->etudiant->notify(new DossierReorienteNotification(
+                $ecole->nom,
+                $filiere->nom,
+                $request->motif
+            ));
+            
+            // Envoyer un SMS de réorientation
+            $this->envoyerSMSReorientation($dossier, $ecole->nom, $filiere->nom, $request->motif);
+        }
+        
+        // Notifier les admins
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new DossierReorienteNotification(
+                $ecole->nom,
+                $filiere->nom,
+                $request->motif
+            ));
+        }
+        
+        \App\Services\ActivityLogger::log(
+            'reorient_dossier',
+            Dossier::class,
+            $dossier->id,
+            "Réorientation du dossier #{$dossier->id} vers l'école #{$ecole->id} ({$ecole->nom}) par un agent."
+        );
+        
+        return back()->with('success', 'Dossier réorienté avec succès et notifications envoyées.');
+    }
+    
+    /**
+     * Envoyer un SMS de validation
+     */
+    private function envoyerSMSValidation($dossier)
+    {
+        try {
+            // Préparation du message SMS
+            $message = "DOBAS: Votre dossier N°" . $dossier->numero_dossier . " a été validé avec succès.\n\n";
+            $message .= "Félicitations! Votre candidature est acceptée.\n\n";
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                // Envoyer le SMS via le service MTN Tinda
+                $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi du SMS de validation', [
+                'dossier_id' => $dossier->id,
+                'telephone' => $dossier->telephone,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Envoyer un SMS de rejet
+     */
+    private function envoyerSMSRejet($dossier, $motif)
+    {
+        try {
+            // Préparation du message SMS
+            $message = "DOBAS: Nous vous informons que votre dossier N°" . $dossier->numero_dossier . " a été rejeté.\n\n";
+            $message .= "Motif: " . $motif . "\n\n";
+            $message .= "Pour plus d'informations, veuillez contacter notre service.\n\n";
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                // Envoyer le SMS via le service MTN Tinda
+                $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi du SMS de rejet', [
+                'dossier_id' => $dossier->id,
+                'telephone' => $dossier->telephone,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Envoyer un SMS pour dossier incomplet
+     */
+    private function envoyerSMSIncomplet($dossier, $commentaire)
+    {
+        try {
+            // Préparation du message SMS
+            $message = "DOBAS: Votre dossier N°" . $dossier->numero_dossier . " est incomplet.\n\n";
+            $message .= "Commentaire: " . $commentaire . "\n\n";
+            $message .= "Veuillez compléter votre dossier dès que possible.\n\n";
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                // Envoyer le SMS via le service MTN Tinda
+                $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi du SMS pour dossier incomplet', [
+                'dossier_id' => $dossier->id,
+                'telephone' => $dossier->telephone,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Envoyer un SMS d'affectation
+     */
+    private function envoyerSMSAffectation($dossier, $ecoleNom, $filiere)
+    {
+        try {
+            // Préparation du message SMS
+            $message = "DOBAS: Votre dossier N°" . $dossier->numero_dossier . " a été traité avec succès.\n\n";
+            $message .= "Vous avez été affecté à l'établissement: " . $ecoleNom . "\n";
+            $message .= "Filière: " . $filiere . "\n\n";
+            $message .= "Félicitations pour votre admission!\n\n";
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                // Envoyer le SMS via le service MTN Tinda
+                $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi du SMS d\'affectation', [
+                'dossier_id' => $dossier->id,
+                'telephone' => $dossier->telephone,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    /**
+     * Envoyer un SMS de réorientation
+     */
+    private function envoyerSMSReorientation($dossier, $ecoleNom, $filiereNom, $motif)
+    {
+        try {
+            // Préparation du message SMS
+            $message = "DOBAS: Votre dossier N°" . $dossier->numero_dossier . " a été réorienté.\n\n";
+            $message .= "Nouvelle affectation: " . $ecoleNom . "\n";
+            $message .= "Filière: " . $filiereNom . "\n\n";
+            
+            if (!empty($motif)) {
+                $message .= "Motif: " . $motif . "\n\n";
+            }
+            
+            $message .= "Cordialement,\nL'équipe DOBAS";
+            
+            // Formater le numéro de téléphone pour l'envoi de SMS
+            $formattedPhone = $this->formatPhoneNumberForSMS($dossier->telephone);
+            
+            // Vérifier si le numéro est valide avant d'envoyer le SMS
+            if (!empty($formattedPhone)) {
+                // Envoyer le SMS via le service MTN Tinda
+                $this->mtnTindaService->sendSMS(
+                    $message,
+                    $formattedPhone, // Numéro de téléphone formaté de l'étudiant
+                    null, // Utiliser le sender par défaut configuré
+                    null, // Email (optionnel)
+                    null, // Message mail (optionnel)
+                    null, // Objet mail (optionnel)
+                    null, // Date d'envoi (optionnel)
+                    null, // ID externe (optionnel)
+                    null  // URL de callback (optionnel)
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de l\'envoi du SMS de réorientation', [
+                'dossier_id' => $dossier->id,
+                'telephone' => $dossier->telephone,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 }
