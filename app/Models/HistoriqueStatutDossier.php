@@ -9,7 +9,12 @@ class HistoriqueStatutDossier extends Model
 {
     use HasFactory;
     
-    protected $table = 'historique_statut_dossier'; // Ajoutez cette ligne
+    protected $table = 'historique_statut_dossier';
+    
+    // Indique à Eloquent d'utiliser modifie_le comme timestamp de création
+    const CREATED_AT = 'modifie_le';
+    // Désactive l'utilisation du updated_at
+    const UPDATED_AT = null;
     
     protected $fillable = [
         'dossier_id',

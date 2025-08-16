@@ -94,7 +94,7 @@ class Dossier extends Model
 
     public function historique(): HasMany
     {
-        return $this->hasMany(HistoriqueStatutDossier::class);
+        return $this->hasMany(HistoriqueStatutDossier::class, 'dossier_id');
     }
 
     public function commentaires(): HasMany

@@ -11,14 +11,18 @@ import {
 import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
 } from "@/components/ui/pagination";
-import { Eye, Check, X, School } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, Eye, Filter } from "lucide-react";
 import { useState } from "react";
 
-export default function DossierList({ dossiers = { data: [], current_page: 1, last_page: 1 }, bourses = [], filters = {} }) {
-  const [selectedDossier, setSelectedDossier] = useState(null);
-  const [showRejectionModal, setShowRejectionModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
-
+export default function DossierList({ 
+  dossiers = { data: [], current_page: 1, last_page: 1, total: 0 }, 
+  bourses = [], 
+  filters = {},
+  stats = {}
+}) {
+  const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  
   const handleFilterChange = (value) => {
     const query = {
       ...filters,
@@ -42,41 +46,31 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
       preserveState: true,
     });
   };
-
-  const validateDossier = (id) => {
-    if (confirm("Êtes-vous sûr de vouloir valider ce dossier ?")) {
-      router.post(`/agent/dossiers/${id}/valider`, {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-          // Action après succès
-        }
-      });
-    }
-  };
-
-  const openRejectionModal = (dossier) => {
-    setSelectedDossier(dossier);
-    setShowRejectionModal(true);
-  };
-
-  const rejectDossier = () => {
-    if (!rejectionReason.trim()) {
-      alert("Veuillez saisir une raison de rejet");
-      return;
-    }
-
-    router.post(`/agent/dossiers/${selectedDossier.id}/rejeter`, {
-      motif: rejectionReason
-    }, {
+  
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const query = {
+      ...filters,
+      search: searchTerm,
+    };
+    router.get("/agent/dossiers", query, {
       preserveScroll: true,
-      onSuccess: () => {
-        setShowRejectionModal(false);
-        setRejectionReason("");
-        setSelectedDossier(null);
-      }
+      preserveState: true,
     });
   };
-
+  
+  const clearSearch = () => {
+    setSearchTerm('');
+    const query = {
+      ...filters,
+      search: undefined,
+    };
+    router.get("/agent/dossiers", query, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+  
   const pageLink = (page) => {
     const query = new URLSearchParams();
     query.append("page", page);
@@ -89,6 +83,7 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
   // Fonction pour obtenir la couleur du statut
   const getStatusColor = (status) => {
     switch (status) {
+      case 'soumis': return 'text-gray-600 bg-gray-100';
       case 'en_attente': return 'text-blue-600 bg-blue-100';
       case 'en_cours': return 'text-yellow-600 bg-yellow-100';
       case 'accepte': return 'text-green-600 bg-green-100';
@@ -110,117 +105,165 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
     });
   };
   
+  // Fonction pour obtenir le nom complet de l'étudiant
+  const getEtudiantName = (dossier) => {
+    // Vérifier si les données sont dans l'étudiant ou directement dans le dossier
+    if (dossier.etudiant) {
+      return `${dossier.etudiant.nom} ${dossier.etudiant.prenom}`;
+    }
+    // Sinon utiliser les champs directs du dossier
+    return `${dossier.nom || ''} ${dossier.prenom || ''}`.trim() || '—';
+  };
+  
+  // Fonction pour obtenir le nom de l'établissement
+  const getEtablissement = (dossier) => {
+    // Vérifier si la relation ecole est chargée
+    if (dossier.ecole) {
+      return dossier.ecole.nom;
+    }
+    // Sinon utiliser le champ etablissement du dossier
+    return dossier.etablissement || '—';
+  };
+  
   return (
     <>
       <Head title="Liste des dossiers" />
       <AgentLayout>
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-gray-800">🎓 Dossiers de Candidature</h1>
-          <p className="text-gray-500 mt-1">Visualisez et filtrez les candidatures en un clic.</p>
-        </div>
-
-        <div className="bg-white border rounded-2xl shadow-sm p-6 mb-6 flex flex-wrap gap-4 justify-between items-center">
-          <Select onValueChange={handleFilterChange} value={filters.statut || "all"}>
-            <SelectTrigger className="w-[220px] rounded-xl border-gray-300">
-              <SelectValue placeholder="Filtrer par statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="en_attente">En attente</SelectItem>
-              <SelectItem value="accepte">Accepté</SelectItem>
-              <SelectItem value="rejete">Rejeté</SelectItem>
-              <SelectItem value="incomplet">Incomplet</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            onValueChange={handleBourseChange}
-            value={filters.bourse_id?.toString() || "all"}
-          >
-            <SelectTrigger className="w-[220px] rounded-xl border-gray-300">
-              <SelectValue placeholder="Filtrer par bourse" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les bourses</SelectItem>
-              {Array.isArray(bourses) && bourses.map((b) => (
-                <SelectItem key={b.id} value={b.id.toString()}>
-                  {b.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-100">
-                <TableHead>Étudiant</TableHead>
-                <TableHead>École souhaitée</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.isArray(dossiers.data) && dossiers.data.length > 0 ? (
-                dossiers.data.map((dossier, idx) => (
-                  <TableRow key={dossier.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <TableCell className="font-medium">{dossier.nom} {dossier.prenom}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <School className="h-4 w-4 mr-1 text-gray-500" />
-                        {dossier.etablissement || dossier.ecole?.nom || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className="capitalize rounded-full text-xs px-3 py-1"
-                        variant={
-                          dossier.statut === "accepte"
-                            ? "default"
-                            : dossier.statut === "rejete"
-                              ? "destructive"
-                              : dossier.statut === "incomplet"
-                                ? "secondary"
-                                : "outline"
-                        }
-                      >
-                        {dossier.statut}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Link href={route('agent.dossiers.show', dossier.id)}>
+        <div className="space-y-6">
+          {/* En-tête avec statistiques */}
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-bold text-gray-800">🎓 Dossiers de Candidature</h1>
+            <p className="mt-1 text-gray-500">Visualisez et filtrez les candidatures en un clic.</p>
+          </div>
+          
+          {/* Cartes de statistiques */}
+          <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4">
+            <div className="p-4 border border-blue-200 rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-300">Total</p>
+              <p className="text-2xl font-bold">{stats.total || 0}</p>
+            </div>
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-900/20 dark:border-gray-800">
+              <p className="text-sm text-gray-800 dark:text-gray-300">Soumis</p>
+              <p className="text-2xl font-bold">{stats.soumis || 0}</p>
+            </div>
+            <div className="p-4 border border-green-200 rounded-lg bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+              <p className="text-sm text-green-800 dark:text-green-300">Acceptés</p>
+              <p className="text-2xl font-bold">{stats.accepte || 0}</p>
+            </div>
+            <div className="p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+              <p className="text-sm text-red-800 dark:text-red-300">Rejetés</p>
+              <p className="text-2xl font-bold">{stats.rejete || 0}</p>
+            </div>
+          </div>
+          
+          {/* Filtres et recherche */}
+          <div className="flex flex-col items-center justify-between gap-4 p-6 bg-white shadow-sm dark:bg-zinc-800 rounded-xl md:flex-row">
+            <div className="flex flex-wrap gap-4">
+              <Select onValueChange={handleFilterChange} value={filters.statut || "all"}>
+                <SelectTrigger className="w-[220px] rounded-xl border-gray-300">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="soumis">Soumis</SelectItem>
+                  <SelectItem value="en_attente">En attente</SelectItem>
+                  <SelectItem value="en_cours">En cours</SelectItem>
+                  <SelectItem value="accepte">Accepté</SelectItem>
+                  <SelectItem value="valide">Validé</SelectItem>
+                  <SelectItem value="rejete">Rejeté</SelectItem>
+                  <SelectItem value="incomplet">Incomplet</SelectItem>
+                  <SelectItem value="reoriente">Réorienté</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select
+                onValueChange={handleBourseChange}
+                value={filters.bourse_id?.toString() || "all"}
+              >
+                <SelectTrigger className="w-[220px] rounded-xl border-gray-300">
+                  <SelectValue placeholder="Filtrer par bourse" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les bourses</SelectItem>
+                  {Array.isArray(bourses) && bourses.map((b) => (
+                    <SelectItem key={b.id} value={b.id.toString()}>
+                      {b.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Rechercher un dossier..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 md:w-64"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute text-gray-400 transform -translate-y-1/2 right-3 top-1/2 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <Button type="submit" variant="outline">
+                Rechercher
+              </Button>
+            </form>
+          </div>
+          
+          {/* Tableau des dossiers */}
+          <div className="overflow-hidden bg-white border shadow-sm rounded-xl dark:bg-zinc-800">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-100 dark:bg-gray-700">
+                  <TableHead>Étudiant</TableHead>
+                  <TableHead>Bourse</TableHead>
+                  <TableHead>Établissement</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.isArray(dossiers.data) && dossiers.data.length > 0 ? (
+                  dossiers.data.map((dossier, idx) => (
+                    <TableRow key={dossier.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50 dark:bg-gray-800/50"}>
+                      <TableCell className="font-medium">
+                        {getEtudiantName(dossier)}
+                      </TableCell>
+                      <TableCell>{dossier.bourse?.nom || "-"}</TableCell>
+                      <TableCell>{getEtablissement(dossier)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={getStatusColor(dossier.statut)}
+                        >
+                          {dossier.statut}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(dossier.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/agent/dossiers/${dossier.id}`}>
                           <Button variant="secondary" size="sm" className="gap-1">
                             <Eye className="w-4 h-4" />
                             Voir
                           </Button>
                         </Link>
-
-                        {dossier.statut === "en_attente" || dossier.statut === "incomplet" ? (
-                          <>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="gap-1"
-                              onClick={() => validateDossier(dossier.id)}
-                            >
-                              <Check className="w-4 h-4" />
-                              Valider
-                            </Button>
-
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="gap-1"
-                              onClick={() => openRejectionModal(dossier)}
-                            >
-                              <X className="w-4 h-4" />
-                              Rejeter
-                            </Button>
-                          </>
-                        ) : null}
-                      </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan="6" className="py-10 text-center text-muted-foreground">
+                      Aucun dossier trouvé.
                     </TableCell>
                   </TableRow>
                 )}
@@ -230,7 +273,7 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
           
           {/* Pagination */}
           {dossiers.last_page > 1 && (
-            <Pagination className="mt-8 justify-center">
+            <Pagination className="justify-center mt-8">
               <PaginationContent>
                 {Array.from({ length: dossiers.last_page }, (_, i) => (
                   <PaginationItem key={i}>
@@ -247,56 +290,6 @@ export default function DossierList({ dossiers = { data: [], current_page: 1, la
             </Pagination>
           )}
         </div>
-
-        {dossiers.last_page > 1 && (
-          <Pagination className="mt-8 justify-center">
-            <PaginationContent>
-              {Array.from({ length: dossiers.last_page }, (_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    isActive={dossiers.current_page === i + 1}
-                    href={pageLink(i + 1)}
-                    className="rounded-full"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-            </PaginationContent>
-          </Pagination>
-        )}
-
-        {/* Modal de rejet */}
-        {showRejectionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-medium mb-4">Rejeter le dossier</h3>
-              <p className="mb-4">Veuillez indiquer la raison du rejet du dossier de {selectedDossier?.nom} {selectedDossier?.prenom}:</p>
-              <textarea
-                className="w-full border rounded p-2 mb-4"
-                rows="4"
-                placeholder="Raison du rejet..."
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-              ></textarea>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowRejectionModal(false);
-                    setRejectionReason("");
-                    setSelectedDossier(null);
-                  }}
-                >
-                  Annuler
-                </Button>
-                <Button variant="destructive" onClick={rejectDossier}>
-                  Confirmer le rejet
-                </Button>
-              </div>
-            </div>
-          </div>
-        )};
       </AgentLayout>
     </>
   );
