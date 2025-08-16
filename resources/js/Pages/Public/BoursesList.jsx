@@ -21,7 +21,8 @@ import {
   Users,
   Award,
   Calendar,
-  MapPin
+  MapPin,
+  HeartHandshake
 } from "lucide-react";
 
 export default function BoursePage() {
@@ -31,14 +32,14 @@ export default function BoursePage() {
     transition: { duration: 0.6 },
     viewport: { once: true }
   };
-
+  
   const staggerContainer = {
     initial: { opacity: 0 },
     whileInView: { opacity: 1 },
     transition: { staggerChildren: 0.1, duration: 0.6 },
     viewport: { once: true }
   };
-
+  
   const staggerItem = {
     initial: { opacity: 0, x: -20 },
     whileInView: { opacity: 1, x: 0 },
@@ -52,7 +53,7 @@ export default function BoursePage() {
         {/* Hero Section Enhanced */}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 to-blue-600/10 dark:from-green-400/5 dark:to-blue-400/5"></div>
-          <div className="relative max-w-6xl mx-auto px-6 py-20 text-center">
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-24 text-center">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -63,21 +64,21 @@ export default function BoursePage() {
                 Opportunités d'Excellence
               </div>
               
-              <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-green-700 to-blue-600 dark:from-green-400 dark:to-blue-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-green-700 to-blue-600 dark:from-green-400 dark:to-blue-400 bg-clip-text text-transparent">
                 Bourses d'Études
               </h1>
               
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Explorez un monde d'opportunités éducatives. Découvrez les bourses locales et internationales 
                 qui transformeront votre avenir académique et professionnel.
               </p>
               
               <div className="flex flex-wrap justify-center gap-4">
-                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all">
                   <ArrowRight className="mr-2 h-5 w-5" />
                   Explorer les bourses
                 </Button>
-                <Button size="lg" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-8 py-3 rounded-full">
+                <Button size="lg" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 px-6 sm:px-8 py-3 rounded-full">
                   <Download className="mr-2 h-5 w-5" />
                   Guide complet
                 </Button>
@@ -85,30 +86,30 @@ export default function BoursePage() {
             </motion.div>
           </div>
         </section>
-
-        <div className="max-w-6xl mx-auto px-6 space-y-20 pb-20">
+        
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-16 sm:space-y-20 pb-16 sm:pb-20">
           
           {/* Statistics Section */}
-          <motion.section {...fadeIn} className="grid md:grid-cols-4 gap-6">
+          <motion.section {...fadeIn} className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
             {[
               { icon: Users, number: "2 000+", label: "Étudiants aidés" },
               { icon: Award, number: "03+", label: "Types Bourses" },
               { icon: Globe2, number: "45", label: "Pays partenaires" },
               { icon: GraduationCap, number: "95%", label: "Taux de réussite" }
             ].map((stat, index) => (
-              <Card key={index} className="text-center p-6 bg-white/70 dark:bg-zinc-800/70 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+              <Card key={index} className="text-center p-4 sm:p-6 bg-white/70 dark:bg-zinc-800/70 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-all hover:scale-105">
                 <stat.icon className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-3" />
-                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">{stat.number}</div>
                 <div className="text-gray-600 dark:text-gray-300 text-sm">{stat.label}</div>
               </Card>
             ))}
           </motion.section>
-
+          
           {/* Types de bourses Enhanced */}
           <section>
             <motion.div {...fadeIn}>
               <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+                <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
                   Types de Bourses
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
@@ -116,7 +117,7 @@ export default function BoursePage() {
                 </p>
               </div>
               
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
                 <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
                   <Card className="relative overflow-hidden bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl h-full">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
@@ -125,7 +126,7 @@ export default function BoursePage() {
                         <div className="p-3 bg-white/20 rounded-full">
                           <School className="w-6 h-6" />
                         </div>
-                        <CardTitle className="text-2xl font-bold">
+                        <CardTitle className="text-xl sm:text-2xl font-bold">
                           Bourses Locales
                         </CardTitle>
                       </div>
@@ -133,7 +134,7 @@ export default function BoursePage() {
                     <CardContent className="relative z-10">
                       <p className="text-green-50 mb-6 leading-relaxed">
                         Programmes nationaux dédiés aux étudiants méritants et aux situations particulières. 
-                        Couvrage complet des frais académiques locaux.
+                        Couverture complète des frais académiques locaux.
                       </p>
                       <div className="space-y-2">
                         {["Frais de scolarité", "Allocation mensuelle", "Matériel pédagogique"].map((item, i) => (
@@ -146,7 +147,7 @@ export default function BoursePage() {
                     </CardContent>
                   </Card>
                 </motion.div>
-
+                
                 <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
                   <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl h-full">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
@@ -155,8 +156,8 @@ export default function BoursePage() {
                         <div className="p-3 bg-white/20 rounded-full">
                           <Globe className="w-6 h-6" />
                         </div>
-                        <CardTitle className="text-2xl font-bold">
-                          Bourses Etrangères
+                        <CardTitle className="text-xl sm:text-2xl font-bold">
+                          Bourses Étrangères
                         </CardTitle>
                       </div>
                     </CardHeader>
@@ -176,14 +177,44 @@ export default function BoursePage() {
                     </CardContent>
                   </Card>
                 </motion.div>
+                
+                <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+                  <Card className="relative overflow-hidden bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-xl h-full">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                    <CardHeader className="relative z-10">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-white/20 rounded-full">
+                          <HeartHandshake className="w-6 h-6" />
+                        </div>
+                        <CardTitle className="text-xl sm:text-2xl font-bold">
+                          Assistance aux Cas Sociaux
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10">
+                      <p className="text-amber-50 mb-6 leading-relaxed">
+                        Aide destinée aux élèves ayant fait le BET (Brevet d'Études Techniques) 
+                        et rencontrant des difficultés sociales.
+                      </p>
+                      <div className="space-y-2">
+                        {["Aide financière", "Soutien psychologique", "Accompagnement personnalisé"].map((item, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
             </motion.div>
           </section>
-
+          
           {/* Constitution du dossier Enhanced */}
           <motion.section {...fadeIn}>
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
                 Votre Dossier de Candidature
               </h2>
               <p className="text-gray-600 dark:text-gray-300 text-lg">
@@ -191,16 +222,16 @@ export default function BoursePage() {
               </p>
             </div>
             
-            <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur border border-gray-200 dark:border-zinc-700 p-8 rounded-2xl shadow-xl">
+            <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur border border-gray-200 dark:border-zinc-700 p-6 sm:p-8 rounded-2xl shadow-xl">
               <motion.div {...staggerContainer}>
                 <div className="grid md:grid-cols-2 gap-6 mb-8">
                   {[
-                    { icon: FileText, title: "Relevés de notes", desc: "Attestant la moyenne au BAC" },
-                    { icon: BadgeCheck, title: "Lettre de motivation", desc: "Relevé de notes" },
-                    { icon: IdCard, title: "Pièce d'identité", desc: "Document officiel en cours de validité" },
-                    { icon: GraduationCap, title: "Attestation du BAC", desc: "Document légalisé" },
-                    { icon: ClipboardCheck, title: "Formulaire DOBAS", desc: "Dossier officiel de demande de bourse" },
-                    { icon: Calendar, title: "Planning", desc: "Dates limites et échéances importantes" }
+                    { icon: IdCard, title: "Acte de naissance", desc: "Copie certifiée conforme" },
+                    { icon: FileText, title: "Casier judiciaire", desc: "Document à jour" },
+                    { icon: ClipboardCheck, title: "Certificat médical", desc: "Délivré par un médecin du METP" },
+                    { icon: GraduationCap, title: "Attestation de réussite au BAC", desc: "Document officiel" },
+                    { icon: BadgeCheck, title: "Photo d'identité", desc: "Format 4×4 récente" },
+                    { icon: Calendar, title: "Formulaire DOBAS", desc: "Dossier de demande complété" }
                   ].map((item, index) => (
                     <motion.div key={index} {...staggerItem} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
                       <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -214,20 +245,20 @@ export default function BoursePage() {
                   ))}
                 </div>
                 
-                <div className="text-center">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg">
+                {/* <div className="text-center">
+                  <Button className="bg-green-600 hover:bg-green-700 text-white px-6 sm:px-8 py-3 rounded-full shadow-lg">
                     <Download className="mr-2 h-5 w-5" />
                     Télécharger le guide complet PDF
                   </Button>
-                </div>
+                </div> */}
               </motion.div>
             </div>
           </motion.section>
-
+          
           {/* Avantages Enhanced */}
           <motion.section {...fadeIn}>
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
                 Pourquoi Choisir une Bourse ?
               </h2>
               <p className="text-gray-600 dark:text-gray-300 text-lg max-w-3xl mx-auto">
@@ -285,24 +316,6 @@ export default function BoursePage() {
               ))}
             </div>
           </motion.section>
-
-          {/* CTA Section Enhanced */}
-          {/* <motion.section {...fadeIn} className="text-center bg-gradient-to-r from-green-600 to-blue-600 text-white p-12 rounded-2xl shadow-2xl">
-            <h2 className="text-3xl font-bold mb-4">Prêt à Commencer Votre Parcours ?</h2>
-            <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-              Ne laissez pas passer cette opportunité unique. Votre avenir commence maintenant.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100 px-8 py-3 rounded-full font-semibold shadow-lg">
-                <MapPin className="mr-2 h-5 w-5" />
-                Voir les bourses disponibles
-              </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8 py-3 rounded-full">
-                Nous contacter
-              </Button>
-            </div>
-          </motion.section> */}
-          
         </div>
       </div>
     </PublicLayout>

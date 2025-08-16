@@ -194,7 +194,7 @@ export default function Apropos() {
             <div className="grid items-center gap-12 md:grid-cols-2">
               <div className="space-y-6">
                 <h2 className="mb-6 text-4xl font-bold text-green-700">
-                  Mot de la Directrice 
+                  Mot de la Directrice
                 </h2>
                 <div className="space-y-4 prose prose-lg text-gray-700">
                   <p className="text-lg leading-relaxed">
@@ -212,18 +212,17 @@ export default function Apropos() {
 
                   </p>
                   <p className="text-lg italic leading-relaxed">
-                    — Le Directeur Général de la DOBAS
+                    — La Directrice Générale de la DOBAS
                   </p>
                 </div>
               </div>
-              <div className="relative">
-                <div className="relative w-22 z-10">
+              <div className="relative max-w-xs sm:max-w-sm md:max-w-md mx-auto">
+                <div className="relative z-10 overflow-hidden rounded-3xl shadow-2xl border-5 border-white bg-white transform hover:scale-105 transition-all duration-300">
                   <img
                     src={dg}
-                    alt="Directeur Général de la DOBAS"
-
-                    className="rounded-3xl shadow-2xl border-8 border-white w-full object-contain bg-white transform hover:scale-105 transition-all duration-300"
-
+                    alt="Directrice Générale de la DOBAS"
+                    className="w-full h-auto object-contain"
+                    style={{ maxHeight: '500px' }}
                   />
                 </div>
                 <div className="absolute w-full h-full -top-6 -right-6 bg-gradient-to-br from-green-300/30 to-yellow-300/30 rounded-3xl -z-10 blur-sm"></div>

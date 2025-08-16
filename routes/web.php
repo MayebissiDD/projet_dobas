@@ -179,16 +179,11 @@ Route::prefix('agent')->name('agent.')->middleware(['auth:web', 'role:agent'])->
     Route::post('/dossiers/{id}/valider', [AgentDossierActionController::class, 'valider'])->name('dossiers.valider');
     Route::post('/dossiers/{id}/rejeter', [AgentDossierActionController::class, 'rejeter'])->name('dossiers.rejeter');
     Route::post('/dossiers/{id}/affecter', [AgentDossierActionController::class, 'affecter'])->name('dossiers.affecter');
-<<<<<<< HEAD
-    Route::post('/dossiers/{id}/reorienter', [AgentDossierActionController::class, 'reorienter'])->name('dossiers.reorienter');
-
-=======
     Route::post('/dossiers/{id}/incomplet', [AgentDossierActionController::class, 'marquerIncomplet'])->name('dossiers.incomplet');
     
     // Pièces jointes
     Route::get('/dossiers/{dossierId}/pieces/{pieceId}/download', [PieceController::class, 'download'])->name('dossiers.pieces.download');
     
->>>>>>> e970dd4
     // Notifications
     Route::get('/notifications', [AgentNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [AgentNotificationController::class, 'markAllAsRead'])->name('notifications.read-all');

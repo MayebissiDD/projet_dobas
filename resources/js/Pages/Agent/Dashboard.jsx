@@ -2,11 +2,7 @@ import React from 'react';
 import AgentLayout from '@/Layouts/AgentLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-<<<<<<< HEAD
-import { Eye, Activity, Users, FileText } from 'lucide-react';
-=======
 import { Eye, School } from 'lucide-react';
->>>>>>> e970dd4
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import { Badge } from '@/components/ui/badge';
@@ -102,19 +98,6 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
           </Card>
         </div>
         
-<<<<<<< HEAD
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Table des derniers dossiers */}
-          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Derniers dossiers reçus</h2>
-              <Link href={route('agent.dossiers.index')}>
-                <Button variant="outline" size="sm">Voir tout</Button>
-              </Link>
-            </div>
-            <Table>
-              <TableHeader>
-=======
         {/* Table des derniers dossiers */}
         <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Derniers dossiers reçus</h2>
@@ -130,7 +113,6 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
             </TableHeader>
             <TableBody>
               {dossiers.length === 0 && (
->>>>>>> e970dd4
                 <TableRow>
                   <TableHead>Étudiant</TableHead>
                   <TableHead>Bourse</TableHead>
@@ -138,67 +120,6 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
                   <TableHead>Date</TableHead>
                   <TableHead className="text-center">Action</TableHead>
                 </TableRow>
-<<<<<<< HEAD
-              </TableHeader>
-              <TableBody>
-                {dossiers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan="5" className="text-center text-zinc-500">
-                      Aucun dossier trouvé.
-                    </TableCell>
-                  </TableRow>
-                )}
-                {dossiers.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">
-                      {d.etudiant?.nom} {d.etudiant?.prenom}
-                    </TableCell>
-                    <TableCell>{d.bourse?.nom || '—'}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(d.statut)}>
-                        {d.statut}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(d.created_at)}</TableCell>
-                    <TableCell className="text-center">
-                      <Link href={route('agent.dossiers.show', d.id)}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {/* Activités récentes */}
-          <div className="bg-white dark:bg-zinc-800 rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Activités récentes</h2>
-            {recentActivities && recentActivities.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-start p-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <div className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full p-2 mr-3">
-                      <Activity className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm">{activity.description}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(activity.created_at).toLocaleString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-zinc-500 py-4">
-                Aucune activité récente
-              </p>
-            )}
-          </div>
-=======
               )}
               {dossiers.map((d) => (
                 <TableRow key={d.id}>
@@ -234,7 +155,6 @@ export default function Dashboard({ dossiers, stats, recentActivities }) {
               ))}
             </TableBody>
           </Table>
->>>>>>> e970dd4
         </div>
       </div>
     </AgentLayout>

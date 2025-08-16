@@ -18,7 +18,8 @@ import {
   ArrowRight,
   CheckCircle,
   Globe,
-  Calendar
+  Calendar,
+  Building
 } from "lucide-react"
 
 export default function Home() {
@@ -26,7 +27,7 @@ export default function Home() {
   const [form, setForm] = useState({ nom: '', email: '', objet: '', message: '' })
   const [currentSlide, setCurrentSlide] = useState(0)
   const formRef = useRef(null)
-
+  
   const heroSlides = [
     {
       title: "DOBAS - Plateforme nationale des bourses et aides scolaires",
@@ -56,25 +57,24 @@ export default function Home() {
     {
       icon: BookOpen,
       title: "Orientation et information",
-      description: "Orienter les bacheliers dans le choix de leur formation, afin de garantir de garantir une insertion professionnelle.",
+      description: "Orienter les bacheliers dans le choix de leur formation, afin de garantir une insertion professionnelle.",
       color: "bg-green-50 text-green-700 border-green-200",
       iconColor: "text-green-600"
     },
     {
       icon: Award,
       title: "Accompagnement personnalisé",
-      description: "Bénéficiez d’un suivi et de conseils à chaque étape de votre candidature.",
+      description: "Bénéficiez d'un suivi et de conseils à chaque étape de votre candidature.",
       color: "bg-yellow-50 text-yellow-700 border-yellow-200",
       iconColor: "text-yellow-600"
     },
     {
       icon: Globe,
       title: "Bourses locales & étrangères",
-      description: "Accédez à des opportunités au Bénin et à l’international, pour tous les niveaux d’études.",
+      description: "Accédez à des opportunités au Bénin et à l'international, pour tous les niveaux d'études.",
       color: "bg-red-50 text-red-700 border-red-200",
       iconColor: "text-red-600"
     },
-  
   ]
 
   const testimonials = [
@@ -124,22 +124,21 @@ export default function Home() {
       <div className="min-h-screen w-full bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white">
         {/* Hero Section avec animation */}
         <section className="relative h-screen overflow-hidden">
-         
-           {/* Dégradé coloré avec overlay */}
-         <div className="opacity-50 absolute inset-0 z-10">
-          <div className={`absolute inset-0 z-10 bg-gradient-to-br ${heroSlides[currentSlide].gradient} bg-opacity-0 transition-all duration-1000`}>
-            <div className="absolute inset-0 bg-black/10 " />
+          {/* Dégradé coloré avec overlay - AMÉLIORÉ */}
+          <div className="absolute inset-0 z-10 opacity-40">
+            <div className={`absolute inset-0 z-10 bg-gradient-to-br ${heroSlides[currentSlide].gradient} bg-opacity-10 transition-all duration-2000`}>
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
           </div>
-         </div>
+          
           {/* Fond image héro */}
-          <div className="absolute inset-0 z-0 opacity-70">
+          <div className="absolute inset-0 z-0">
             <img
               src={heroImage}
               alt="Fond héro"
               className="w-full h-full object-cover"
             />
           </div>
-
 
           {/* Formes géométriques animées */}
           <div className="absolute inset-0 z-20 overflow-hidden">
@@ -148,42 +147,107 @@ export default function Home() {
             <div className="absolute bottom-1/4 right-1/4 w-12 h-12 bg-green-400/20 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
             <div className="absolute bottom-10 left-10 w-20 h-20 bg-yellow-400/10 rotate-45 animate-spin" style={{ animationDuration: '8s' }} />
           </div>
-
-          {/* Contenu texte et boutons */}
-          <div className="relative z-30 h-full flex flex-col justify-center items-center text-center px-4">
-            <div key={currentSlide} className="animate-fade-in-up">
-              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                {heroSlides[currentSlide].title}
-              </h1>
-              <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl">
-                {heroSlides[currentSlide].subtitle}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 group">
-                Découvrir les bourses
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button variant="outline" className="bg-yellow-600 hover:bg-yellow-700 border-yellow-500 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 group">
-                Postuler maintenant
-              </Button>
-            </div>
-
-            {/* Indicateurs de slides */}
-            <div className="flex space-x-2">
-              {heroSlides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index ? 'bg-white scale-125' : 'bg-white/50'
-                    }`}
-                />
-              ))}
+          
+          {/* Contenu texte et boutons - CENTRAGE AMÉLIORÉ */}
+          <div className="relative z-30 h-full flex flex-col justify-center items-center text-center px-4 py-12">
+            <div className="max-w-4xl w-full">
+              <div key={currentSlide} className="animate-fade-in-up">
+                <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                  {heroSlides[currentSlide].title}
+                </h1>
+                <p className="text-lg md:text-xl text-white/90 mb-10 max-w-3xl mx-auto">
+                  {heroSlides[currentSlide].subtitle}
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <a href="/bourses">
+                <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 group">
+                  Découvrir les bourses
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                </a>
+                <a href="/postuler">
+                <Button variant="outline"  className="bg-yellow-600 hover:bg-yellow-700 border-yellow-500 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg transform hover:scale-105 transition-all duration-400 group">
+                  Postuler maintenant
+                </Button>
+                </a>
+              </div>
+              
+              {/* Indicateurs de slides */}
+              <div className="flex justify-center space-x-2">
+                {heroSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${currentSlide === index ? 'bg-white scale-125' : 'bg-white/50'}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
+        {/* Section Présentation DOBAS - AJOUTÉE */}
+        <section className="py-20 bg-gradient-to-br from-green-50 to-emerald-100">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">Direction d'Orientation, de Bourses et d'Aides Scolaires</h2>
+              <div className="w-24 h-1 bg-green-600 mx-auto mb-6"></div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-green-100 p-3 rounded-full">
+                    <GraduationCap className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Notre Mission</h3>
+                    <p className="text-gray-700">Accompagner les élèves des collèges et lycées techniques dans la poursuite de leurs études afin de favoriser leur insertion professionnelle.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="bg-yellow-100 p-3 rounded-full">
+                    <Building className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Notre Rattachement</h3>
+                    <p className="text-gray-700">La DOBAS travaille sous l'autorité du ministère de l'Enseignement Technique et est dirigée par une Directrice.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="bg-red-100 p-3 rounded-full">
+                    <MapPin className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Notre Emplacement</h3>
+                    <p className="text-gray-700">Nous sommes situés entre les deux lycées 1er mai, pour être au plus près des élèves et étudiants.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Card className="shadow-xl border-0 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-600 to-emerald-700 p-1">
+                  <CardContent className="p-8 bg-white">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">À propos de la DOBAS</h3>
+                    <p className="text-gray-700 mb-4">
+                      La Direction d'Orientation, de Bourses et d'Aides Scolaires (DOBAS) est une structure essentielle du système éducatif congolais.
+                    </p>
+                    <p className="text-gray-700 mb-4">
+                      Nous intervenons à un moment crucial de la vie des élèves : la transition entre l'enseignement secondaire et les études supérieures ou l'insertion professionnelle.
+                    </p>
+                    <p className="text-gray-700">
+                      Grâce à notre expertise et notre réseau de partenaires, nous offrons des solutions concrètes pour que chaque élève puisse réaliser son potentiel, quel que soit son contexte socio-économique.
+                    </p>
+                  </CardContent>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </section>
 
         {/* Section Statistiques */}
         <section className="py-16 bg-white">
@@ -208,7 +272,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-
+        
         {/* Section Services */}
         <section className="py-20 bg-gradient-to-br from-green-50 via-yellow-50 to-red-50">
           <div className="max-w-6xl mx-auto px-4">
@@ -220,7 +284,6 @@ export default function Home() {
                 Découvrez comment DOBAS vous accompagne dans votre parcours éducatif
               </p>
             </div>
-
             <div className="grid md:grid-cols-3 gap-8">
               {services.map((service, index) => (
                 <Card
@@ -243,7 +306,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-
+        
         {/* Section Témoignages */}
         <section className="py-20 bg-white">
           <div className="max-w-6xl mx-auto px-4">
@@ -255,7 +318,6 @@ export default function Home() {
                 Ce que disent nos bénéficiaires
               </p>
             </div>
-
             <div className="grid md:grid-cols-2 gap-8">
               {testimonials.map((testimonial, index) => (
                 <Card key={index} className="hover:shadow-xl transition-shadow duration-300">
@@ -287,7 +349,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-
+        
         {/* Section Contact */}
         <section className="py-20 bg-gradient-to-br from-green-600 to-emerald-700">
           <div className="max-w-4xl mx-auto px-4">
@@ -300,7 +362,6 @@ export default function Home() {
                 <p className="text-xl mb-8 text-green-100">
                   Nous sommes là pour vous accompagner dans votre parcours éducatif
                 </p>
-
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
@@ -308,20 +369,18 @@ export default function Home() {
                     </div>
                     <div>
                       <div className="font-semibold">Adresse</div>
-                      <div className="text-green-100">Brazzaville, République du Congo</div>
+                      <div className="text-green-100">Entre les deux lycées 1er mai</div>
                     </div>
                   </div>
-
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
                       <Phone className="w-6 h-6" />
                     </div>
                     <div>
                       <div className="font-semibold">Téléphone</div>
-                      <div className="text-green-100">+242 06 440 70 66  </div>
+                      <div className="text-green-100">+242 06 440 70 66</div>
                     </div>
                   </div>
-
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/20 p-3 rounded-full">
                       <Mail className="w-6 h-6" />
@@ -333,14 +392,12 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-
               {/* Formulaire */}
               <Card className="shadow-2xl">
                 <CardContent className="p-8">
                   <h3 className="text-2xl font-bold text-gray-900 mb-6">
                     Envoyez-nous un message
                   </h3>
-
                   <div className="space-y-6">
                     <div>
                       <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
@@ -356,7 +413,6 @@ export default function Home() {
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         Adresse email *
@@ -372,7 +428,6 @@ export default function Home() {
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-
                     <div>
                       <label htmlFor="objet" className="block text-sm font-medium text-gray-700 mb-2">
                         Objet
@@ -386,7 +441,6 @@ export default function Home() {
                         className="transition-all duration-300 focus:ring-2 focus:ring-green-500"
                       />
                     </div>
-
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                         Message *
@@ -402,7 +456,6 @@ export default function Home() {
                       />
                     </div>
                   </div>
-
                   <Button
                     onClick={handleSubmit}
                     disabled={sending}
