@@ -114,7 +114,7 @@ class DossierActionController extends Controller
         $ancienStatut = $dossier->statut;
         
         // Vérifier que le statut est valide pour éviter l'erreur de troncature
-        $dossier->statut = 'rejete'; // Assurez-vous que cette valeur est dans l'ENUM de la BD
+        $dossier->statut = 'refuse'; // Assurez-vous que cette valeur est dans l'ENUM de la BD
         $dossier->raison_refus = $request->motif;
         $dossier->save();
         
